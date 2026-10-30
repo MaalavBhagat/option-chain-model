@@ -1,0 +1,127 @@
+DTE CONFOUND CHECK -- read-only, no conclusions folded into RESULTS_EXTENSIONS.md yet
+Hypothesis under test: DTE buckets are largely proxies for weekday + expiry regime,
+not for time-to-expiry itself.
+==============================================================================
+
+==============================================================================
+TASK 1 -- CROSS-TABULATION (nearest_weekly variant)
+==============================================================================
+
+DTE=0  (n=137)
+weekday                Monday  Thursday  Tuesday  Wednesday
+regime                                                     
+post (Tuesday expiry)       4         0       46          0
+pre (Thursday expiry)       0        83        0          4
+
+  Regime split: pre (Thursday expiry)=63.5%, post (Tuesday expiry)=36.5%
+  Weekday split: Thursday=60.6%, Tuesday=33.6%, Wednesday=2.9%, Monday=2.9%
+  Effectively a single weekday in a single regime? NO (top regime 63.5%, top weekday 60.6%)
+
+DTE=1  (n=124)
+weekday                Monday  Tuesday  Wednesday
+regime                                           
+post (Tuesday expiry)      44        0          0
+pre (Thursday expiry)       1        4         75
+
+  Regime split: pre (Thursday expiry)=64.5%, post (Tuesday expiry)=35.5%
+  Weekday split: Wednesday=60.5%, Monday=36.3%, Tuesday=3.2%
+  Effectively a single weekday in a single regime? NO (top regime 64.5%, top weekday 60.5%)
+
+DTE=2  (n=87)
+weekday                Monday  Tuesday
+regime                                
+pre (Thursday expiry)       4       83
+
+  Regime split: pre (Thursday expiry)=100.0%
+  Weekday split: Tuesday=95.4%, Monday=4.6%
+  Effectively a single weekday in a single regime? YES (top regime 100.0%, top weekday 95.4%)
+
+DTE=3  (n=81)
+weekday                Friday  Monday
+regime                               
+post (Tuesday expiry)       4       0
+pre (Thursday expiry)       0      77
+
+  Regime split: pre (Thursday expiry)=95.1%, post (Tuesday expiry)=4.9%
+  Weekday split: Monday=95.1%, Friday=4.9%
+  Effectively a single weekday in a single regime? YES (top regime 95.1%, top weekday 95.1%)
+
+DTE=4  (n=47)
+weekday                Friday  Thursday
+regime                                 
+post (Tuesday expiry)      43         3
+pre (Thursday expiry)       1         0
+
+  Regime split: post (Tuesday expiry)=97.9%, pre (Thursday expiry)=2.1%
+  Weekday split: Friday=93.6%, Thursday=6.4%
+  Effectively a single weekday in a single regime? NO (top regime 97.9%, top weekday 93.6%)
+
+DTE=5  (n=51)
+weekday                Friday  Saturday  Thursday  Wednesday
+regime                                                      
+post (Tuesday expiry)       0         0        42          4
+pre (Thursday expiry)       4         1         0          0
+
+  Regime split: post (Tuesday expiry)=90.2%, pre (Thursday expiry)=9.8%
+  Weekday split: Thursday=82.4%, Friday=7.8%, Wednesday=7.8%, Saturday=2.0%
+  Effectively a single weekday in a single regime? NO (top regime 90.2%, top weekday 82.4%)
+
+DTE=6  (n=119)
+weekday                Friday  Wednesday
+regime                                  
+post (Tuesday expiry)       0         44
+pre (Thursday expiry)      75          0
+
+  Regime split: pre (Thursday expiry)=63.0%, post (Tuesday expiry)=37.0%
+  Weekday split: Friday=63.0%, Wednesday=37.0%
+  Effectively a single weekday in a single regime? NO (top regime 63.0%, top weekday 63.0%)
+
+==============================================================================
+TASK 2 -- IS DTE=5 JUST A RECENT-PERIOD EFFECT?
+==============================================================================
+
+DTE=5: date range 2024-04-05 to 2026-08-13, n=51, mean P&L = 24.02 pts
+
+ALL nearest_weekly trades post-2025-09-02 (every DTE bucket): n=235, mean P&L = 15.40 pts
+
+DTE=0 restricted to post-2025-09-02 only: n=50, mean P&L = 25.25 pts
+
+DTE=5 mean (24.02) vs DTE=0-post-regime-change mean (25.25):
+  PLAIN STATEMENT: DTE=5's advantage DISAPPEARS once time period is held constant -- DTE=0 in the same period performs as well or better. The original DTE=5 finding was
+  confounded with the recent period, not a genuine DTE effect.
+
+==============================================================================
+TASK 3 -- FIXED_DTE vs NEAREST_WEEKLY-DTE=0, SAME DATES (isolates DTE)
+==============================================================================
+
+Restricting both variants to the 137 dates where nearest_weekly's DTE=0 (i.e. the actual expiry days) -- same dates, different contract DTE.
+
+nearest_weekly DTE=0 (same dates): n=137, mean=19.51 pts, win rate=81.02%, stddev=67.59, worst=-249.20
+fixed_dte (same dates, ~5 DTE)         : n=137, mean=15.67 pts, win rate=66.42%, stddev=52.11, worst=-164.95
+
+fixed_dte's actual DTE distribution on these same dates: {5: np.int64(1), 6: np.int64(8), 7: np.int64(120), 8: np.int64(8)}
+
+Does holding DTE constant (via same-date comparison) support or refute the original predictions?
+  (a) mean P&L declines as DTE rises: DTE=0 mean 19.51 vs ~5-DTE mean 15.67 -- consistent with decline
+  (c) stddev rises with DTE: DTE=0 stddev 67.59 vs ~5-DTE stddev 52.11 -- NOT consistent with rise
+
+==============================================================================
+TASK 4 -- DAY-OF-WEEK EFFECT, IGNORING DTE (nearest_weekly, all 647 trades)
+==============================================================================
+
+-- pre (Thursday expiry) --
+Weekday          n   Mean pts   WinRate
+Monday          82       4.18     67.1%
+Tuesday         87       6.19     71.3%
+Wednesday       79      14.88     75.9%
+Thursday        83      14.41     78.3%
+Friday          80       3.31     57.5%
+
+-- post (Tuesday expiry) --
+Weekday          n   Mean pts   WinRate
+Monday          48      28.93     77.1%
+Tuesday         47      21.34     83.0%
+Wednesday       48       5.73     72.9%
+Thursday        45      18.22     80.0%
+Friday          47       2.82     61.7%
+

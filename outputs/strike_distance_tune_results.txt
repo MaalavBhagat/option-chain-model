@@ -1,0 +1,84 @@
+PHASE B -- STRIKE DISTANCE GRID, TUNE SET ONLY
+Pre-registered in config/strike_distance_experiment.json, commit 9019efa
+==============================================================================
+
+Data used: 2024-01-04 to 2025-12-30  (104 tune-set dates)
+HOLDOUT CONFIRMATION: zero dates >= 2026-01-01 were loaded, computed, or
+examined anywhere in this run. The chain was filtered to tune-set dates
+immediately after loading, before any per-combination processing began.
+
+==============================================================================
+3x3 TABLE: TOTAL P&L IN POINTS (rows = call_distance_pct, cols = put_distance_pct)
+==============================================================================
+
+call\put        0.50%        0.75%        1.00%
+    0.50%      1776.20      1525.85      1322.80
+    0.75%      1551.70      1301.35      1098.30
+    1.00%      1496.40      1246.05      1043.00
+
+==============================================================================
+FULL METRICS PER COMBINATION (secondary metrics reported, NOT used for selection)
+==============================================================================
+
+  Call%   Put%    n    TotalPts  WinRate     MaxDD     Worst   StdDev   AvgPrem  VolFail  Baseline
+   0.50   0.50  104     1776.20   81.73%    303.50   -249.20    68.55     46.98        0       YES
+   0.50   0.75  104     1525.85   83.65%    336.20   -258.35    60.95     37.71        0          
+   0.50   1.00  104     1322.80   86.54%    351.45   -262.05    58.17     32.19        0          
+   0.75   0.50  104     1551.70   82.69%    272.30   -216.45    59.89     38.39        0          
+   0.75   0.75  104     1301.35   86.54%    289.80   -221.15    49.71     29.12        0          
+   0.75   1.00  104     1098.30   89.42%    305.05   -224.85    45.54     23.59        0          
+   1.00   0.50  104     1496.40   83.65%    325.95   -222.00    51.97     33.42        0          
+   1.00   0.75  104     1246.05   88.46%    200.50   -175.10    39.44     24.16        0          
+   1.00   1.00  104     1043.00   90.38%    215.75   -178.80    33.56     18.63        0          
+
+==============================================================================
+WINNING COMBINATION (sole criterion: total_pnl_points on the tune set)
+==============================================================================
+
+WINNER: call=0.5%  put=0.5%  total_pnl_points=1776.20  (this IS the pre-registered baseline)
+Runner-up: call=0.75%  put=0.5%  total_pnl_points=1551.70
+
+Paired comparison on 104 dates common to both combinations:
+  Margin (winner total - runner-up total): 224.50 points
+  Mean per-trade difference: 2.16 points, SE of mean difference: 1.86 points
+  Paired t-test: t = 1.1626, p = 0.2477
+  PLAIN READ: this margin is INSIDE the noise band -- not statistically
+  distinguishable from zero at the conventional 5% threshold (n=104).
+  The 'winner' should not be read as a confidently better combination.
+
+==============================================================================
+PRE-REGISTERED PREDICTIONS -- DIRECT CHECK (journal/2026-08-16-strike-distance-preregistration.md)
+==============================================================================
+
+(a) Wider strikes reduce total P&L but improve the worst single trade
+    Symmetric combos -- total pts: 0.5/0.5=1776.20, 0.75/0.75=1301.35, 1.0/1.0=1043.00
+    Symmetric combos -- worst trade: 0.5/0.5=-249.20, 0.75/0.75=-221.15, 1.0/1.0=-178.80
+    VERDICT: HELD
+
+(b) Widening the put costs more premium than widening the call by the same %
+    Avg premium (points): baseline 0.5/0.5=46.98, call widened to 1.0 (put fixed 0.5)=33.42, put widened to 1.0 (call fixed 0.5)=32.19
+    Premium given up: widening call=13.56 pts, widening put=14.79 pts
+    VERDICT: HELD
+
+(c) Most differences across the grid will be within noise for this sample size
+    Range of total_pnl_points across all 9 combos: 1043.00 to 1776.20 (spread 733.20 points)
+    Winner-vs-runner-up paired test above: p = 0.2477 (inside the noise band)
+    VERDICT: HELD (at least for the closest pair)
+
+(d) The volume filter, which never bound at 0.5%, may begin binding at 1.0%
+    0.5/0.5: 0 volume failures
+    0.5/0.75: 0 volume failures
+    0.5/1.0: 0 volume failures
+    0.75/0.5: 0 volume failures
+    0.75/0.75: 0 volume failures
+    0.75/1.0: 0 volume failures
+    1.0/0.5: 0 volume failures
+    1.0/0.75: 0 volume failures
+    1.0/1.0: 0 volume failures
+    VERDICT: FAILED -- filter never bound anywhere in this grid, including at 1.0%/1.0%
+
+==============================================================================
+NO FINAL CONCLUSION IS DECLARED HERE. The holdout set has not been examined.
+Per config/strike_distance_experiment.json's holdout_rule, it is examined
+exactly once, after this tune-set selection, in a separate task.
+==============================================================================

@@ -1,0 +1,91 @@
+STRIKE DISTANCE GRID -- HOLDOUT SET (the one permitted look)
+Descriptive only -- winner already fixed on the tune set (0.5%/0.5%)
+==============================================================================
+
+Data used: 2026-01-06 to 2026-08-11  (32 holdout dates)
+WARNING: n=32 is very small. Nothing in this file is conclusive.
+
+==============================================================================
+3x3 TABLE: TOTAL P&L IN POINTS (rows = call_distance_pct, cols = put_distance_pct)
+==============================================================================
+
+call\put        0.50%        0.75%        1.00%
+    0.50%       861.85      1061.30      1157.65
+    0.75%       698.70       898.15       994.50
+    1.00%       618.65       818.10       914.45
+
+==============================================================================
+FULL METRICS PER COMBINATION
+==============================================================================
+
+  Call%   Put%    n    TotalPts  WinRate  WorstTrade   StdDev  VolFail
+   0.50   0.50   32      861.85   78.12%     -153.00    65.89        0
+   0.50   0.75   32     1061.30   81.25%      -64.30    50.21        0
+   0.50   1.00   32     1157.65   81.25%      -64.10    47.02        0
+   0.75   0.50   32      698.70   81.25%     -169.05    65.44        0
+   0.75   0.75   32      898.15   84.38%      -80.35    46.00        0
+   0.75   1.00   32      994.50   87.50%      -31.30    36.64        0
+   1.00   0.50   32      618.65   81.25%     -185.05    66.13        0
+   1.00   0.75   32      818.10   84.38%      -96.35    45.77        0
+   1.00   1.00   32      914.45   90.62%      -47.30    34.50        0
+
+==============================================================================
+DOES 0.5%/0.5% REMAIN TOP ON THE HOLDOUT?
+==============================================================================
+
+Selected tune-set winner (0.5%/0.5%) on holdout: 861.85 points
+Top-ranked combination ON THE HOLDOUT: 0.5%/1.0% at 1157.65 points
+0.5%/0.5% is NOT the top-ranked combination on the holdout -- it trails by 295.80 points.
+
+==============================================================================
+TUNE-SET RANKING vs HOLDOUT RANKING (Spearman correlation across 9 cells)
+==============================================================================
+
+Combo         Tune total  Tune rank  Holdout total  Holdout rank
+0.5/0.5          1776.20        1.0         861.85           6.0
+0.5/0.75         1525.85        3.0        1061.30           2.0
+0.5/1.0          1322.80        5.0        1157.65           1.0
+0.75/0.5          1551.70        2.0         698.70           8.0
+0.75/0.75         1301.35        6.0         898.15           5.0
+0.75/1.0          1098.30        8.0         994.50           3.0
+1.0/0.5          1496.40        4.0         618.65           9.0
+1.0/0.75         1246.05        7.0         818.10           7.0
+1.0/1.0          1043.00        9.0         914.45           4.0
+
+Spearman rho = -0.2833, p = 0.4600
+PLAIN READ: near-zero correlation -- this is consistent with (and does not
+contradict) the tune-set ordering having been noise, exactly as flagged in
+outputs/strike_distance_flatness.txt.
+
+==============================================================================
+IS THE GRID FLAT ON THE HOLDOUT TOO?
+==============================================================================
+
+Range of total_pnl_points across the 9 combinations: 618.65 to 1157.65 (spread 539.00 points)
+Best (0.5/1.0) vs worst (1.0/0.5) on holdout, paired t-test on 32 common dates: t=1.41, p=0.1678
+PLAIN READ: not statistically distinguishable -- consistent with flatness
+persisting on the holdout, though n=32 gives this test very little power.
+
+==============================================================================
+WORST SINGLE TRADE PER COMBINATION (points)
+==============================================================================
+
+  0.5/0.5: -153.00 pts
+  0.5/0.75: -64.30 pts
+  0.5/1.0: -64.10 pts
+  0.75/0.5: -169.05 pts
+  0.75/0.75: -80.35 pts
+  0.75/1.0: -31.30 pts
+  1.0/0.5: -185.05 pts
+  1.0/0.75: -96.35 pts
+  1.0/1.0: -47.30 pts
+
+==============================================================================
+SAMPLE SIZE WARNING
+==============================================================================
+
+n=32 holdout trades split across 9 combinations. Nothing in this file should be
+treated as conclusive -- it is a single, small, descriptive out-of-sample check,
+not a confirmatory test. Per the departure recorded in
+journal/2026-08-16-strike-distance-holdout.md, this does not change the already-
+selected winner (0.5%/0.5%) regardless of what it shows.

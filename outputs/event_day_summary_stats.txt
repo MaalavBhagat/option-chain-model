@@ -1,0 +1,118 @@
+EVENT DAY SUMMARY STATISTICS -- corrected using per-contract NewBrdLotQty
+==============================================================================
+
+Source: outputs/event_day_case_studies.csv (28 dates)
+Rupee figures below use the ACTUAL lot size of the specific nearest-expiry
+contract each date actually traded (NewBrdLotQty read directly from that
+date's bhavcopy for that exact expiry), NOT the flat lot_size=65 baked into
+the case-studies CSV's own pnl_zero_cost/pnl_with_costs columns.
+
+Note on methodology: these are non-expiry-day trades (see
+journal/2026-08-16-event-day-case-studies.md) -- none of them have a
+same-day-expiry contract, so src/lot_size.py's get_lot_size() (designed for
+the 136-trade baseline, which always trades same-day expiries) cannot answer
+this correctly and would fall back to the date-range table for all 28 rows.
+Instead, NewBrdLotQty was read directly for the specific nearest-expiry
+contract each row actually used (matching expiry_date in the case-studies
+CSV) -- this is the true authoritative source for these particular trades.
+Points figures are lot-size-independent and unaffected either way.
+
+Lot size distribution across these 28 dates:
+  lot_size=25: 7 dates
+  lot_size=50: 1 dates
+  lot_size=65: 10 dates
+  lot_size=75: 10 dates
+
+==============================================================================
+OVERALL (28 dates)
+==============================================================================
+
+-- Zero-cost --
+  Count:  28
+  Total:  Rs      31,424.50   |      162.00 pts
+  Mean:   Rs       1,122.30   |        5.79 pts
+  Median: Rs       1,701.25   |       34.83 pts
+  Win rate: 71.43%
+
+-- With costs --
+  Count:  28
+  Total:  Rs      25,594.18   |      106.00 pts
+  Mean:   Rs         914.08   |        3.79 pts
+  Median: Rs       1,564.53   |       32.83 pts
+  Win rate: 71.43%
+
+==============================================================================
+BY DAYS-TO-EXPIRY (DTE) BUCKET
+==============================================================================
+
+-- Zero-cost --
+ DTE    n       Total Rs   Total pts      Mean Rs   Mean pts   WinRate
+   1    3      10,722.25      200.35     3,574.08      66.78    100.0%
+   2    3     -12,740.00     -509.60    -4,246.67    -169.87     66.7%
+   4    4       5,549.75       83.85     1,387.44      20.96     75.0%
+   5   11      30,160.50      432.10     2,741.86      39.28     81.8%
+   6    7      -2,268.00      -44.70      -324.00      -6.39     42.9%
+
+-- With costs --
+ DTE    n       Total Rs   Total pts      Mean Rs   Mean pts   WinRate
+   1    3      10,128.10      194.35     3,376.03      64.78    100.0%
+   2    3     -13,157.95     -515.60    -4,385.98    -171.87     66.7%
+   4    4       4,627.50       75.85     1,156.87      18.96     75.0%
+   5   11      27,633.55      410.10     2,512.14      37.28     81.8%
+   6    7      -3,637.02      -58.70      -519.57      -8.39     42.9%
+
+==============================================================================
+FULL SORTED LIST, ALL 28 DATES (worst to best, zero-cost rupees)
+==============================================================================
+
+Date          Lot  DTE     Move%         ZC Rs    ZC pts         WC Rs    WC pts  Event
+2024-06-04     25    2    -5.59%    -19,415.00   -776.60    -19,558.88   -778.60  Lok Sabha Election Result: 2024 Lok Sabha gen
+2024-06-07     25    6    +2.05%     -3,910.00   -156.40     -4,048.49   -158.40  RBI MPC: RBI MPC resolution (FY24-25 2nd meet
+2026-03-19     65    5    -0.84%     -3,493.75    -53.75     -3,725.88    -55.75  US Fed FOMC: FOMC policy decision announced M
+2025-06-06     75    6    +1.03%     -3,378.75    -45.05     -3,626.63    -47.05  RBI MPC: RBI MPC resolution (FY25-26 2nd meet
+2025-10-01     75    6    +0.88%     -2,392.50    -31.90     -2,633.87    -33.90  RBI MPC: RBI MPC resolution (FY25-26 4th meet
+2025-12-05     75    4    +0.72%     -1,331.25    -17.75     -1,568.72    -19.75  RBI MPC: RBI MPC resolution (FY25-26 5th meet
+2026-04-30     65    5    +0.00%       -874.25    -13.45     -1,098.81    -15.45  US Fed FOMC: FOMC policy decision announced A
+2026-08-05     65    6    -0.18%       -451.75     -6.95       -671.51     -8.95  RBI MPC: RBI MPC resolution (FY26-27 3rd meet
+2025-12-11     75    5    +0.49%        318.75      4.25         80.54      2.25  US Fed FOMC: FOMC policy decision announced D
+2024-04-05     50    5    +0.12%      1,120.00     22.40        932.15     20.40  RBI MPC: RBI MPC resolution (FY24-25 1st meet
+2025-08-06     75    1    -0.27%      1,286.25     17.15      1,051.10     15.15  RBI MPC: RBI MPC resolution (FY25-26 3rd meet
+2026-01-29     65    5    +0.29%      1,306.50     20.10      1,078.51     18.10  US Fed FOMC: FOMC policy decision announced J
+2024-10-09     25    1    -0.33%      1,545.00     61.80      1,411.46     59.80  RBI MPC: RBI MPC resolution (FY24-25 4th meet
+2024-11-08     25    6    -0.25%      1,606.25     64.25      1,470.42     62.25  US Fed FOMC: FOMC policy decision announced N
+2024-12-06     25    6    -0.21%      1,796.25     71.85      1,658.65     69.85  RBI MPC: RBI MPC resolution (FY24-25 5th meet
+2024-10-08     25    2    +0.73%      1,882.50     75.30      1,746.40     73.30  State Election Result: Haryana and Jammu & Ka
+2025-11-14     75    4    +0.55%      2,077.50     27.70      1,835.61     25.70  State Election Result: Bihar assembly electio
+2026-06-05     65    4    -0.48%      2,375.75     36.55      2,151.98     34.55  RBI MPC: RBI MPC resolution (FY26-27 2nd meet
+2026-02-06     65    4    +0.34%      2,427.75     37.35      2,208.62     35.35  RBI MPC: RBI MPC resolution (FY25-26 6th meet
+2025-09-18     75    5    -0.07%      2,482.50     33.10      2,245.78     31.10  US Fed FOMC: FOMC policy decision announced S
+2026-07-30     65    5    +0.28%      2,600.00     40.00      2,380.57     38.00  US Fed FOMC: FOMC policy decision announced J
+2026-06-18     65    5    +0.39%      2,993.25     46.05      2,771.25     44.05  US Fed FOMC: FOMC policy decision announced J
+2025-10-30     75    5    -0.41%      3,225.00     43.00      2,982.02     41.00  US Fed FOMC: FOMC policy decision announced O
+2025-02-07     75    6    -0.38%      4,462.50     59.50      4,214.41     57.50  RBI MPC: RBI MPC resolution (FY24-25 6th meet
+2024-07-23     25    2    -0.37%      4,792.50    191.70      4,654.53    189.70  Union Budget: Full Union Budget 2024-25 prese
+2026-05-04     65    1    +0.23%      7,891.00    121.40      7,665.54    119.40  State Election Result: West Bengal Tamil Nadu
+2026-04-08     65    5    +0.60%      8,433.75    129.75      8,194.64    127.75  RBI MPC: RBI MPC resolution (FY26-27 1st meet
+2025-02-01     75    5    -0.20%     12,048.75    160.65     11,792.78    158.65  Union Budget: Union Budget 2025-26 presented
+
+==============================================================================
+CORRELATION: abs(index move %) vs P&L
+==============================================================================
+
+Rupees (corrected, per-contract lot size): r = -0.8177
+Points (lot-size independent):             r = -0.9395
+These differ slightly from each other because lot size varies by date and
+correlates somewhat with time, unevenly rescaling the rupee series relative
+to the pure points series.
+
+==============================================================================
+DATES WITH |INDEX MOVE| > 1%
+==============================================================================
+
+Count: 3
+  2024-06-04  move=-5.59%  lot=25  ZC=Rs-19,415.00 (-776.60pts)
+  2024-06-07  move=+2.05%  lot=25  ZC=Rs-3,910.00 (-156.40pts)
+  2025-06-06  move=+1.03%  lot=75  ZC=Rs-3,378.75 (-45.05pts)
+Combined zero-cost: Rs -26,703.75  (-978.05 pts)
+Combined with-costs: Rs -27,233.99  (-984.05 pts)
+

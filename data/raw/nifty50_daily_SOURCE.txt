@@ -1,0 +1,5 @@
+Source: Yahoo Finance via the yfinance Python package
+Ticker: ^NSEI
+Downloaded on: 2026-08-12
+Date range requested: 2016-01-01 to 2026-08-12
+Rows downloaded: 2613

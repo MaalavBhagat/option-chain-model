@@ -1,0 +1,33 @@
+{
+  "status": "EXPLORATORY — does not replace the pre-registered expiry-day baseline",
+  "research_question": "The existing baseline trades only on expiry days (0 DTE), where the option expires that afternoon and closing price is pure intrinsic value. This extension tests the same entry rule on EVERY trading day, where the option does NOT expire that day and its closing price still contains time value. These are structurally different trades and must never be pooled.",
+
+  "date_range": {
+    "from": "2024-01-01",
+    "to": "present",
+    "note": "Matches the earliest date NSE's UDiFF bhavcopy archive has data for (journal/2026-08-13-pipeline-extension.md)."
+  },
+
+  "two_variants_both_to_be_run": {
+    "nearest_weekly": "Always sell the nearest weekly expiry on or after the trade date (DTE varies 0-6). This is what would actually be traded.",
+    "fixed_dte": "Always sell the contract closest to a fixed 5 days to expiry, rolling to the next weekly where needed. Cleaner comparison because it holds DTE constant."
+  },
+
+  "entry_rule": {
+    "description": "Unchanged from the pre-registered baseline.",
+    "call_strike": "nearest strike >= open x 1.005",
+    "put_strike": "nearest strike <= open x 0.995",
+    "entry_price": "OpnPric",
+    "exit_price": "ClsPric, same day",
+    "volume_filter_per_leg": 1000
+  },
+
+  "primary_metric": "mean P&L per trade IN POINTS, reported separately for each DTE bucket 0 through 6. Results must NEVER be pooled across DTE buckets.",
+
+  "lot_size_source": "per-contract NewBrdLotQty via src/lot_size.py; points is the primary scale",
+
+  "volume_filter": {
+    "min_contracts_per_leg": 1000,
+    "note": "Unchanged from the pre-registered baseline."
+  }
+}

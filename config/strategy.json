@@ -1,0 +1,7 @@
+{
+  "strike_distance_pct": 0.005,
+  "min_volume": 1000,
+  "lot_size": 65,
+  "costs_enabled": false,
+  "cost_per_trade_rupees": 0
+}

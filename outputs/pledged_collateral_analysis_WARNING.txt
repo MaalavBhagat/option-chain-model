@@ -1,0 +1,83 @@
+================================================================================
+!!! WARNING -- SUPERSEDED RESULT. DO NOT QUOTE THE BREACH COUNTS OR THE
+!!! RETURN FIGURE FROM outputs/pledged_collateral_analysis.csv.
+================================================================================
+
+This note sits BESIDE outputs/pledged_collateral_analysis.csv. That CSV has
+NOT been edited. It is kept exactly as committed (27c4cd4) as the historical
+record of a study whose design turned out to be flawed -- this project does
+not silently patch a superseded finding.
+
+--------------------------------------------------------------------------------
+THE SPECIFIC FLAW
+--------------------------------------------------------------------------------
+
+The study defined the account's CASH (C) as a FRACTION of that same trade's
+own MARGIN REQUIREMENT (the base case used 50%).
+
+Available margin was A = C + min(U, C), where U is the haircut-adjusted value
+of the pledged shares. When C is half the margin requirement and the pledged
+pot is large enough that min(U, C) returns C, then A = 2C = the margin
+requirement exactly. A Type 1 (margin) breach requires the requirement to
+EXCEED A. Since A was constructed to EQUAL the requirement, a Type 1 breach
+was arithmetically impossible except through rounding.
+
+The result "zero Type 1 breaches across 137 trades" is therefore not a finding
+about risk. It is the definition of C, restated.
+
+THE SIGNATURE, VISIBLE IN THE FILE ITSELF:
+  - At cash_fraction_pct = 50 (base case), hedged rows: minimum coverage_ratio
+    across the whole sample is EXACTLY 1.0000, and type1_margin_breach is
+    0 of 2,484 rows. A real stress test produces a distribution; a minimum
+    pinned at exactly 1.0000 for the worst of 137 trades is the fingerprint
+    of a quantity computed from itself.
+  - At cash_fraction_pct = 0 (sensitivity): ALL 2,484 rows breach, coverage
+    ratio 0.0. Equally mechanical, equally uninformative.
+
+COMPOUNDING PROBLEM -- THE POT COULD NOT BIND:
+  The pledged pot was Rs 10,00,000 against a largest single-trade hedged
+  margin requirement of Rs 29,295 -- a ratio of 34.1x. A collateral pot 34
+  times larger than anything it must cover cannot be stressed by anything in
+  this sample, however C is defined.
+
+CONSEQUENCE FOR BETA:
+  Beta could not have affected either breach test under this design. Type 1
+  was pinned by construction; Type 2 (cash breach) compared peak MTM loss to
+  C alone, so the collateral pot and its beta never entered that comparison
+  either. The original prediction 4 ("beta 1.3 produces more breaches than
+  beta 0.7") could not have passed under ANY beta value.
+
+--------------------------------------------------------------------------------
+WHAT IS WITHDRAWN
+--------------------------------------------------------------------------------
+
+  - Predictions 1, 2 and 4 of the 2026-08-17 pre-registration, withdrawn as
+    evidence -- not miscomputed, but incapable of producing any other answer.
+  - The reported 1,638% return-on-posted-cash headline. It is a capital-
+    efficiency artifact of dividing by a small C that was itself derived from
+    a small margin requirement -- a return on something that was never
+    actually stressed.
+
+WHAT STANDS: predictions 3 and 5 of that pre-registration, neither of which
+depended on how C was defined relative to the margin requirement.
+
+--------------------------------------------------------------------------------
+SUPERSEDED BY
+--------------------------------------------------------------------------------
+
+  outputs/pledged_leverage_analysis_v2.csv       <-- the current result
+  config/pledged_leverage_experiment.json        <-- corrected design
+  journal/2026-08-18-pledged-leverage-preregistration.md
+  journal/2026-08-18-pledged-leverage-analysis.md
+  RESULTS_EXTENSIONS.md, section "Pledged collateral as leverage"
+
+The replacement design fixes this by making C a FIXED account balance chosen
+in advance (Rs 25,000 / 50,000 / 1,00,000 / 2,00,000, each tested
+independently), never derived from a trade's own margin requirement, and by
+resizing the pot to Rs 2,00,000 -- roughly 7-8x the largest requirement
+instead of 34x -- so it can actually bind.
+
+NOTE: the replacement study has its own limitation, disclosed in its journal
+entry -- the pot still never bound below C = Rs 2,00,000, so the underlying
+collateral-risk (wrong-way-risk) question remains untested.
+================================================================================

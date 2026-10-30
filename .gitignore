@@ -1,0 +1,23 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+.claude/settings.local.json
+.pytest_cache/
+.ipynb_checkpoints/
+.idea/
+.vscode/
+.obsidian/
+*.log
+
+# Raw bhavcopy zips are bulky and fully regenerable via src/download_bhavcopy.py.
+# The manifest (data/raw/download_manifest.csv) and *_SOURCE.txt notes are kept
+# tracked as the provenance record; the zips themselves are not.
+data/raw/*.zip
+
+# Market data pulled from NSE/Yahoo Finance cannot be republished (licence).
+# Manifests and *_SOURCE.txt provenance notes stay tracked; the data itself
+# does not. Regenerate with src/download_bhavcopy.py and src/extract_chain.py.
+data/raw/nifty50_daily.csv
+data/processed/*.csv

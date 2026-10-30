@@ -1,0 +1,10 @@
+{
+  "strike_distance_pct": 0.005,
+  "min_volume": 1000,
+  "lot_size": 65,
+  "costs_enabled": true,
+  "cost_per_trade_rupees": 0,
+  "brokerage_per_leg": 20,
+  "stt_pct": 0.001,
+  "bid_ask_points_per_leg": 0.5
+}

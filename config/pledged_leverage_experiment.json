@@ -1,0 +1,98 @@
+{
+  "status": "PRE-REGISTRATION ONLY -- no analysis code exists yet, no number has been computed. Supersedes the DESIGN (not the record) of config/pledged_collateral_experiment.json, pre-registered at commit a595a6b and analyzed at commit 27c4cd4.",
+
+  "description": "Pre-registration for a corrected pledged-collateral study. The first design (a595a6b/27c4cd4) is not deleted or edited -- it stands as a documented failed design. This file records a different question, asked with a design that cannot fail by construction the way the first one did.",
+
+  "why_the_first_design_is_superseded": {
+    "the_flaw": "The a595a6b design set cash C for each trade as a FRACTION of that same trade's own margin requirement (cash_fraction x margin). This makes available margin A = C + min(U, C) equal to the margin requirement BY CONSTRUCTION whenever U >= C -- so at cash_fraction=50%, A always came out >= margin requirement for essentially every trade. Type 1 (margin) breaches were 0/137 because of the arithmetic of how C was defined, not because of any finding about risk.",
+    "the_tell": "The analysis's own minimum coverage ratio across the sample was exactly 1.0000 -- a coverage ratio of exactly 1 for the WORST trade in 137 is not a risk finding, it's the signature of a quantity computed from itself.",
+    "consequence_for_predictions": "Beta (collateral sensitivity to NIFTY moves) could not possibly affect either breach test under this design: Type 1 was pinned at 0 or 137 by the cash_fraction/margin identity regardless of collateral value, and Type 2 (cash breach) compared peak MTM loss only to C, which never involved the collateral pot or its beta at all. Prediction 4 (beta 1.3 produces more breaches than beta 0.7) FAILED in the original run, but that failure carried no information -- it could not have passed under any beta, by construction.",
+    "predictions_contaminated": "Predictions 1, 2 and 4 from the original pre-registration are contaminated by this design flaw and are withdrawn as evidence. Predictions 3 (high-based MTM measure produces more breaches than close-based) and 5 (the 2024-06-04 stress case breaches) are unaffected by the flaw and stand as valid findings.",
+    "the_pot_size_problem": "The original collateral pot was Rs 10,00,000 against a maximum single-trade margin requirement of Rs 29,295. A pot roughly 34x the largest margin requirement in the sample can never be meaningfully stressed -- the collateral side of the model was never actually tested under this sizing, independent of the cash_fraction flaw.",
+    "withdrawn_headline_figure": "The reported 1,638% return on posted cash from the original analysis is withdrawn. It is a capital-efficiency artifact of defining C as a small fraction of a small margin requirement, not a risk-adjusted finding.",
+    "disposition": "outputs/pledged_collateral_analysis.csv, src/pledged_collateral_analysis.py, config/pledged_collateral_experiment.json and journal/2026-08-17-pledged-collateral-preregistration.md are UNCHANGED by this task and remain exactly as committed at a595a6b/27c4cd4. They are the historical record of a design that turned out to be flawed, and that fact is itself part of the record -- not something to be edited away."
+  },
+
+  "research_question": "Pledging shares lets you sell more contracts on the same cash. Does the extra premium survive the extra risk that leverage brings?",
+
+  "framing": "Pledging is leverage. It buys position size, not skill. The strategy's per-lot points P&L is identical either way. The question is whether the additional premium from the larger position survives the additional loss on bad days and the additional cash strain, given that SEBI requires mark-to-market losses to be met in cash.",
+
+  "regulatory_basis": {
+    "reused_from": "config/pledged_collateral_experiment.json's regulatory_basis block -- same four primary-verified SEBI facts, same two secondary facts, not re-verified in this file. See that file or journal/2026-08-17-pledged-collateral-preregistration.md for the full citations.",
+    "fact_used_directly_in_this_design": "SEBI fact 4 (Other Liquid Assets may not exceed Cash Equivalents) is what implements the min(U, C) cap in the available-margin formula below -- this is the same mechanism as the first design, reused correctly here."
+  },
+
+  "design": {
+    "structure": "Two arms, run on the SAME 137 trades (outputs/backtest_trades_137.csv), holding the SAME fixed cash C. This is the correction: C is a fixed account balance chosen in advance, NEVER a fraction of margin.",
+    "arm_A_unlevered": {
+      "funding": "Cash only.",
+      "position_size": "The largest whole number of lots supported by cash C alone, given that trade's per-lot margin requirement."
+    },
+    "arm_B_levered": {
+      "funding": "Cash plus pledged shares.",
+      "available_margin_formula": "A = C + min(U, C), per SEBI fact 4 -- U is the haircut-adjusted pledged-share value.",
+      "position_size": "The largest whole number of lots supported by A, given that trade's per-lot margin requirement."
+    },
+    "leverage_ceiling": "The levered position can NEVER exceed 2x the unlevered one. min(U, C) caps the shares' contribution at exactly the cash amount C (SEBI fact 4), so A <= 2C always, regardless of how large U or beta is. No result from this study may be read as implying unlimited leverage -- the ceiling is exactly 2x by construction."
+  },
+
+  "parameters": {
+    "cash_C_values_rupees": [25000, 50000, 100000, 200000],
+    "cash_C_note": "Fixed in advance, tested independently, never derived from any trade's own margin.",
+    "pledged_share_pot": {
+      "base_value_rupees": 200000,
+      "inception_date": "2024-01-04",
+      "beta_base_case": 1.0,
+      "beta_sensitivities": [0.7, 1.3],
+      "sizing_rationale": "Deliberately sized so the collateral side can actually bind -- the previous study's Rs 10,00,000 pot (roughly 34x the largest single-trade margin requirement) could not."
+    },
+    "haircut": {
+      "base_case_pct": 9,
+      "base_case_source": "SEBI floor, primary-verified (fact 3 in config/pledged_collateral_experiment.json).",
+      "sensitivities_pct": [20, 40],
+      "sensitivity_40_note": "Rests on the unverified secondary source (fact 6 in config/pledged_collateral_experiment.json) and must be labelled as such wherever reported."
+    },
+    "position": {
+      "type": "Hedged iron condor only, primary case.",
+      "margin_per_lot_formula": "(max spread width x lot_size) - net credit at entry, using outputs/backtest_trades_137.csv's real lot_size column.",
+      "naked_excluded": "The naked position is excluded entirely from this study, not run even as a sensitivity -- its 10%-of-notional margin approximation is too crude to carry a leverage conclusion."
+    }
+  },
+
+  "forced_close_rule": {
+    "rule": "If peak intraday MTM loss on the position exceeds cash C, the position is closed at that point and P&L is taken there, not carried to session close.",
+    "why": "Without this rule, the levered arm would book profits on a path it could not actually have survived to collect -- a position whose cash cushion was exhausted intraday cannot simply continue to the close in reality.",
+    "pre_registration_status": "This rule is an ANALYSIS-TIME decision, NOT one that was pre-registered in the original a595a6b design. Labelled as such here and in every output that uses it.",
+    "reporting": "Report the number of trades that trigger a forced close in each arm, separately."
+  },
+
+  "peak_mtm_measurement": {
+    "reported_as": "A RANGE, never a single number -- same convention as the first design.",
+    "method_a_close_based": "Using call_exit / put_exit from outputs/backtest_trades_137.csv.",
+    "method_b_high_based_upper_bound": "Using HghPric for both short legs from data/processed/nifty_expiry_day_chains.csv, with long wings valued at entry price throughout (kept as a genuine ceiling, not credited any gain).",
+    "caveat": "The call's intraday high and the put's intraday high need not occur at the same moment, so method (b) is a conservative upper bound on a price path that may never have actually existed, not a measured worst moment."
+  },
+
+  "primary_metric": "LOCKED -- nothing else may be used to judge the result: total points and total rupees, Arm B minus Arm A, after forced closes. Plus the number of forced closes in each arm.",
+
+  "secondary_metrics": [
+    "Worst single-trade rupee loss in each arm.",
+    "Number of trades where cash was insufficient (could not even support 1 lot).",
+    "Return on C in each arm."
+  ],
+
+  "predictions": [
+    {"id": 1, "statement": "Arm B's gross premium before forced closes is close to 2x Arm A's at every C."},
+    {"id": 2, "statement": "After forced closes, Arm B's advantage is less than 2x."},
+    {"id": 3, "statement": "Arm B suffers more forced closes than Arm A at every C."},
+    {"id": 4, "statement": "At the lowest C (Rs 25,000), Arm B's net result is WORSE than Arm A's."},
+    {"id": 5, "statement": "There exists a C above which Arm B beats Arm A on net rupees."},
+    {"id": 6, "statement": "Arm B's worst single-trade loss is at least 1.8x Arm A's."}
+  ],
+
+  "reporting_rule": "Report each prediction PASS/FAIL plainly in the analysis phase. Do not soften failures.",
+
+  "protected_files_note": "This study must never modify config/pledged_collateral_experiment.json, journal/2026-08-17-pledged-collateral-preregistration.md, src/pledged_collateral_analysis.py, or outputs/pledged_collateral_analysis.csv. Those remain the record of the first, flawed design. This study computes its own margin and position-size figures independently from outputs/backtest_trades_137.csv.",
+
+  "not_yet_done": "No analysis script exists for this design yet. No number of any kind -- not a mean, not a count, not a check -- has been computed for this file's design. This file and journal/2026-08-18-pledged-leverage-preregistration.md are the only two files this task touches."
+}

@@ -1,0 +1,807 @@
+PROJECT HANDOVER V2 -- NIFTY 50 INTRADAY SHORT STRANGLE RESEARCH
+Self-contained. Assume zero prior context. Read this whole file before doing anything.
+
+================================================================================
+0. WHO I AM AND HOW I WANT TO BE HELPED
+================================================================================
+
+I am a finance student with NO coding experience. I can read numbers and
+tables fine, but explain any code or technical step in plain language.
+
+This is a PAPER-TRADING RESEARCH PROJECT. No broker is connected. No order
+has ever been placed. Nothing here executes a trade, and nothing here ever
+should. This is permanent, not a phase -- if you ever find yourself about
+to wire up real execution, stop and ask me first, explicitly.
+
+How I like to work with Claude Code:
+- I give precise, scoped instructions, usually as a numbered list of tasks.
+- I frequently say "do not touch file X" -- treat that as absolute. If you
+  think a protected file needs changing, stop and tell me instead of doing it.
+- I care a lot about pre-registration discipline: write down what you're
+  going to do and how you'll judge the result BEFORE you compute anything,
+  commit that, and only then run the analysis. The commit timestamp is the
+  evidence the decision came first.
+- I want raw computation and data reported in POINTS, not rupees, as the
+  primary unit (see section 5 -- lot size has changed four times and rupee
+  totals are not comparable across eras without correcting for that).
+- When you find a bug or a wrong assumption (including one I made, or one
+  a past instance of you made), do not silently fix it and move on. Stop,
+  explain the discrepancy, and wait unless I've told you in advance to
+  proceed once a check passes.
+- When something is superseded, don't edit the old file to match the new
+  number. Leave the old file as a historical record and add a new document
+  (or a new section in RESULTS_EXTENSIONS.md) explaining what changed and
+  why. RESULTS.md in particular is never to be edited -- see section 8.
+- Always commit with a real, detailed message explaining what changed and
+  why, not just what file changed.
+- If you're about to run something read-only, keep it read-only. If a task
+  says "commit only the named output file," don't stage anything else.
+
+Paste-ready prompt for starting a new session with no other context:
+-----
+Read PROJECT_HANDOVER_V2.txt in full before doing anything else. This is a
+paper-trading research project (no broker, no order execution, ever) on an
+intraday NIFTY 50 short strangle. I'm a finance student, no coding
+background -- explain in plain language. Follow the standing principles in
+that file (pre-registration before computing, points as the primary metric,
+never edit RESULTS.md, never silently patch a superseded finding). Then:
+[your actual task here]
+-----
+
+================================================================================
+1. ENVIRONMENT AND START-OF-SESSION ROUTINE
+================================================================================
+
+Project root: options-research/ (this repository)
+Virtual environment: .venv/ in the project root.
+  - Run scripts with:  .venv/bin/python src/<script>.py
+  - Install packages with:  .venv/bin/pip install <package>
+  - Never use a bare `python` or `pip` -- always the .venv path.
+
+Git: a normal local repo, commits only (no remote push has been done in
+this project's history as far as this document knows). Every substantive
+change is committed with a descriptive message. See section 9 for the
+commit hashes that matter.
+
+Start-of-session routine:
+  1. Read this file in full.
+  2. `git log --oneline` to see what's landed since this was written.
+  3. Check `journal/` for the most recent dated entries -- the journal is
+     the authoritative, chronological lab notebook. This handover
+     summarizes it but the journal has the full reasoning.
+  4. Check `RESULTS_EXTENSIONS.md` for the current corrected headline
+     figures -- NOT `RESULTS.md`, which is frozen (section 8).
+
+================================================================================
+2. THE STRATEGY
+================================================================================
+
+An intraday short strangle on the NIFTY 50 index, sold at market open on
+the weekly options EXPIRY day, closed before that same day's close --
+never held overnight.
+
+Entry rule (unchanged since pre-registration, commit 902da2c):
+  - Call strike: nearest available strike >= index_open x 1.005 (0.5% OTM)
+  - Put strike: nearest available strike <= index_open x 0.995 (0.5% OTM)
+  - Sell both at that day's OpnPric. Buy both back at that day's ClsPric.
+  - Volume filter: both legs must have TtlTradgVol > 1000 contracts, else
+    the date is skipped and the reason logged (never silently dropped).
+
+Expiry weekday regime change: NIFTY's weekly expiry moved from THURSDAY to
+TUESDAY, effective 2025-09-02. This is established from THIS PROJECT'S OWN
+DATA: same-day-expiry NIFTY rows in the downloaded bhavcopy files shift from
+Thursday to Tuesday starting with the 2025-09-02 expiry (see
+journal/2026-08-12-findings.md). NO NSE CIRCULAR HAS BEEN LOCATED OR CITED
+anywhere in this project confirming the change or its effective date --
+earlier project documents described this as "confirmed via real circulars,"
+which overstated what had actually been checked; that phrasing was wrong and
+has been corrected here. Treat 2025-09-02 as data-derived and correct as far
+as this project's own bhavcopy history goes, but not independently verified
+against a primary regulatory source (open question -- see the "Open
+questions -- claims to verify" and "Claims verified from data vs claims
+taken from secondary sources" sections near the end of this file). The
+pipeline is regime-aware: Thursday before that date, Tuesday from it.
+Holidays shift the actual expiry to the previous trading day -- this is
+handled where the market is fully closed (HTTP 404 on download), but NOT for
+the case below.
+
+THE MONDAY 2025-10-20 EXCEPTION (important, read this):
+
+  VERIFIED FROM DATA: the 2025-10-21 bhavcopy file exists and downloads
+  successfully (HTTP 200, not 404). Directly checked against the raw file --
+  it contains ZERO rows where TckrSymb=NIFTY and XpryDt=2025-10-21 (no
+  genuine same-day-expiry NIFTY contract that day). The 2025-10-20 bhavcopy,
+  by contrast, contains 186 such rows. The genuine weekly expiry that week
+  was Monday 2025-10-20, not the expected Tuesday. The original downloader's
+  holiday-rollback logic (which only triggers on a 404) never looked at
+  Monday, because the market was nominally open on the 21st -- this part is
+  confirmed directly from this project's own downloaded files, not asserted.
+
+  NOT VERIFIED: the explanation for WHY 2025-10-21 has a real, downloadable
+  bhavcopy with zero genuine expiries -- that 21 October 2025 was an
+  official NSE trading holiday for Diwali Laxmi Pujan, on which NSE ran a
+  ceremonial one-hour "Muhurat Trading" session -- is a plausible hypothesis
+  consistent with well-known NSE/BSE conventions around Diwali, but it came
+  from general/secondary knowledge, NOT a cited primary source. No NSE
+  holiday calendar or circular is cited anywhere in this project confirming
+  this specific date's holiday status or the Muhurat session. Treat this
+  explanation as an unverified hypothesis, not a confirmed fact (open
+  question -- see below).
+
+  This gap was found by accident, months into the project, via an unrelated
+  every-day-download experiment, and is now fixed IN THE DATA (the baseline
+  is 137 trades, not 136) but NOT in the downloader's logic itself -- that
+  limitation is documented, not patched (see section 4 and
+  journal/2026-08-16-missing-expiry-day.md). If you extend the date range
+  covered by this project, budget time to manually check for more cases like
+  this one; the holiday-rollback logic as written cannot catch them.
+
+================================================================================
+3. DATA SOURCES AND THEIR LIMITS
+================================================================================
+
+- NIFTY 50 daily OHLC: yfinance, ticker ^NSEI, 2016-present, no gaps.
+  Saved to data/raw/nifty50_daily.csv.
+- India VIX: yfinance, ticker ^INDIAVIX. Used for a few exploratory checks.
+- NSE F&O bhavcopy (the UDiFF "Common Bhavcopy Final" format): NSE's own
+  historical archive, fetched via src/download_bhavcopy.py.
+  HARD LIMIT: this archive has NO data before 2024-01-01. Confirmed by
+  directly probing dozens of 2023 dates (all 404) versus every 2024+ date
+  tested (all real files). This is a limit of NSE's own published archive,
+  not a design choice. Real, verified per-contract results in this project
+  therefore only exist from 2024-01-04 onward.
+- THE FULL 647-DAY DOWNLOAD (commit 060e104): src/download_all_days.py
+  downloaded literally every NSE trading day from 2024-01-01 to the most
+  recent date, not just expiry days -- 647 files, 765 MB, resumable via
+  data/raw/download_all_days_manifest.csv. This is what made the missing-
+  137th-trade discovery and the every-day extension (section 4) possible.
+  data/raw/*.zip is gitignored -- the raw files are not in the repo, only
+  the manifests and scripts that reproduce them. If you're starting fresh
+  and data/raw/ is empty, re-run src/download_all_days.py (it's polite:
+  2.5s between requests, and skips anything already on disk).
+- 2016-2023: NO real option data exists anywhere in this project. Any
+  figure covering that period (see the regime extrapolation, section 4)
+  is an explicitly labeled ESTIMATE from a fitted model, never a backtest.
+
+================================================================================
+4. EVERY STUDY COMPLETED, WITH ITS OUTCOME
+================================================================================
+
+In roughly chronological order. "Journal:" points to the full reasoning;
+read those for anything you need more depth on than this summary gives.
+
+1. INDEX MOVE DISTRIBUTION (journal/2026-08-12-findings.md)
+   NIFTY's open-to-close move: mean absolute 0.57%, median 0.42%, fat-
+   tailed. ~15% of days move >1%.
+
+2. PIPELINE + PRE-REGISTRATION (commit 902da2c)
+   Strategy parameters (0.5% strike distance, 1000 min volume) written
+   down and committed BEFORE the first backtest ran.
+
+3. THE 136-TRADE BASELINE (commit 630d1b0), later corrected to 137
+   (see item 12). Zero-cost, real option prices, 2024-01-04 to 2026-08-11.
+
+4. COSTS, CALENDAR LUCK, EVENT FILTER, WINGS/MARGIN
+   (journal/2026-08-13-baseline-analysis.md,
+    2026-08-14-exploratory-event-filter-wings.md; commits 4de0cf0,
+    e360d71, 7086e66)
+   - Realistic costs (brokerage/STT/slippage) cut the zero-cost total by
+     ~17%.
+   - CALENDAR LUCK (the project's single most-cited early finding): the
+     largest one-day NIFTY move in the whole sample, 2024-06-04 (Lok
+     Sabha result day, -5.59%), was NEVER an expiry day, so the baseline
+     never traded it. Simulated on its real nearest-expiry chain: an
+     estimated loss over 3x the baseline's actual worst loss.
+   - A calendar-based EVENT FILTER (skip "risky" days) made results
+     WORSE, not better -- it filtered out mostly winning trades.
+   - PROTECTIVE WINGS (2% OTM long call+put, an iron condor): costs
+     money on ordinary days but sharply reduced the 2024-06-04 stress
+     scenario's estimated loss. On a RETURN-ON-MARGIN basis (not
+     absolute rupees), the winged version beats the naked one --
+     margin estimation methodology in outputs/margin_return_analysis.csv.
+
+5. REGIME EXTRAPOLATION 2016-2023 (commit 3eff1b3)
+   AN ESTIMATE, NOT A BACKTEST -- no option data exists for this period.
+   A linear move%->P&L model fit on the real 2024-2026 trades, applied to
+   historical index-only data. 2020 is the only losing estimated year.
+   Never treat any number here as a real result.
+
+6. EVENT-DAY CASE STUDIES (commit 29f300a)
+   28 scheduled, non-expiry event days (Union Budget, RBI MPC, Fed FOMC,
+   election results -- sourced and cited in config/event_calendar.csv)
+   priced on their real nearest-expiry chains. These are NOT same-day-
+   expiry trades and must never be pooled with the baseline. Correction
+   recorded in the journal: an initial description of the 2024-06-04
+   figure as a "linear-fit estimate" was wrong -- it was already a real
+   measurement; this study reproduced it exactly (a consistency check).
+
+7. LOT SIZE AUDIT AND FIX (commits dc72761, 3b75ed9) -- see section 5.
+
+8. STRIKE-DISTANCE GRID EXPERIMENT (commits 9019efa, c6b5158, 651903f,
+   c0ebbda, d012168)
+   Pre-registered 3x3 grid (call/put distance each 0.5%/0.75%/1.0%),
+   sole selection criterion = total points on a 104-trade tune set,
+   32-trade holdout examined exactly once. RESULT: the grid is
+   statistically flat on the tune set (0/36 pairwise comparisons
+   significant). On the holdout, the tune-set "winner" (the existing
+   baseline, 0.5%/0.5%) placed 6th of 9 -- Spearman rank correlation
+   between tune and holdout orderings was -0.28 (not significant). THE
+   BASELINE'S STRIKE DISTANCE IS RETAINED BY DEFAULT, NOT BECAUSE ANY OF
+   THIS DEMONSTRATED IT WAS BEST.
+
+9. PRE-HOLIDAY SESSION ANALYSIS (commit 510168e, exploratory)
+   Hypothesis: expiry days right before a 2+ day holiday gap perform
+   worse. NOT SUPPORTED -- flagged trades (n=15) actually did BETTER on
+   average than unflagged (n=121), not significant either way (p=0.67).
+
+10. EVENT BASE RATE CHECK (commit 13364b7)
+    Do the worst 10 and best 10 baseline trades (by points) coincide with
+    the scheduled event calendar at different rates? Worst-10: 0/10 hit
+    the calendar. Best-10: 3/10, ABOVE the 11% overall base rate. If
+    anything, the calendar coincides with good days more than bad ones.
+
+11. THE MISSING 137TH TRADE (commits 7d166f7, 995e6db)
+    See section 2's Monday 2025-10-20 exception and section 5. The
+    decision to include it was committed BEFORE its P&L was computed
+    (7d166f7); it turned out to be an unremarkable, near-median trade
+    (34.15 points, rank 72 of 137) that changes no headline conclusion.
+
+12. THE EVERY-DAY EXTENSION, PHASE A+B (commits 2a93f8a, 060e104, 1eda0c9,
+    2d5d657; journal/2026-08-16-everyday-*.md)
+    Pre-registered test: does trading the same entry rule on EVERY day
+    (not just expiry days) produce more profit? Two variants:
+    nearest_weekly (DTE varies 0-6) and fixed_dte (~5 DTE target).
+    STRUCTURAL WARNING, repeated in every output file: DTE>0 trades do
+    NOT expire that afternoon, so closing price retains real time value
+    -- never pooled with the expiry-day baseline or across DTE buckets.
+    RAW RESULT: 4 of 5 pre-registered predictions FAILED (not softened):
+      (a) mean P&L declines with DTE -- FAILED (not monotonic)
+      (b) win rate falls with DTE -- FAILED (not monotonic)
+      (c) stddev rises with DTE -- FAILED (DTE=2's stddev highest,
+          driven by one outlier: 2024-06-04, independently recovered
+          here in the every-day data as DTE=2's worst trade)
+      (d) mean P&L after costs negative for DTE>=3 -- FAILED (stays
+          positive through DTE=6)
+      (e) DTE=0 subset reproduces the 137-trade baseline exactly -- HELD
+    DTE=5 appeared to beat DTE=0 (24.02 vs 19.51 points/trade) --
+    apparently contradicting the starting hypothesis's expected direction.
+    THE CONFOUND CHECK (outputs/dte_confound_check.txt, commit 2d5d657):
+    DTE buckets are largely proxies for weekday+regime, not time-to-
+    expiry. DTE=2 is 100% pre-regime/95.4% Tuesday; DTE=3 is 95.1% pre-
+    regime/95.1% Monday; DTE=4 is 97.9% post-regime/93.6% Friday. Holding
+    period constant, DTE=0 restricted to post-2025-09-02 alone averages
+    25.25 points -- HIGHER than DTE=5's 24.02. The DTE=5 advantage does
+    NOT survive controlling for period; it was a recent-period effect.
+    The clean comparison (fixed_dte vs nearest_weekly-DTE=0 on the SAME
+    137 dates) DOES support prediction (a): DTE=0 (19.51 pts) beats the
+    longer-dated leg (15.67 pts) -- though on these specific dates,
+    fixed_dte's realized DTE skews to 7, not 5 (mathematically correct:
+    on an expiry day, next week's DTE=7 is closer to the 5-day target
+    than today's DTE=0), a design wrinkle worth remembering if you reuse
+    this comparison methodology elsewhere.
+    PLAIN CONCLUSION: the starting hypothesis "more trading days means
+    more profit" is NOT supported once the confound is controlled for.
+    Expiry-day-only trading outperforms per trade. This is documented in
+    RESULTS_EXTENSIONS.md's "Every-day extension and the DTE confound"
+    section.
+    PIPELINE VALIDATION EVIDENCE: 2024-06-04's P&L was computed twice, by
+    two independent scripts on two independent code paths, and agrees
+    exactly: outputs/event_day_summary_stats.txt (src/event_day_study.py)
+    records "2024-06-04  25  2  -5.59%  -19,415.00  -776.60 ..."; and
+    outputs/everyday_results.csv (src/everyday_backtest.py) records the
+    same date, DTE=2, "-776.6000000000001,25,bhavcopy,-19415.00..." in
+    BOTH the nearest_weekly and fixed_dte variant rows. Same points
+    figure (-776.60), same lot size (25), same rupee figure (-19,415.00),
+    found by two unrelated pipelines built for two different studies.
+    This is corroborating evidence the P&L engine is computing consistent
+    results across independent code paths, not proof of correctness on
+    its own.
+
+13. THE ONGOING PAPER BLOTTER (commit 14a0b8f) -- see section 10.
+
+================================================================================
+5. WHY POINTS IS THE PRIMARY METRIC, AND THE LOT-SIZE STORY
+================================================================================
+
+NIFTY's lot size (contracts per lot) changed FOUR times across this
+project's 2024-2026 data window, not once and not the three times a
+citation I was given claimed. Confirmed directly from NewBrdLotQty, a
+real per-contract field present in every NSE bhavcopy file (authoritative
+-- checked and preferred over any inferred date):
+
+  Lot size 50: 2024-01-04 (start of this project's data) to 2024-04-25
+  Lot size 25: 2024-04-26 to 2024-11-19 (policy), individual contracts
+               grandfathered through 2025-01-30
+  Lot size 75: 2024-11-20 to 2025-10-27 (policy), individual contracts
+               from as early as 2025-01-02
+  Lot size 65: 2025-10-28 onward (policy), fully in effect 2026-01-06+
+
+Real NSE circulars: FAOP61415 (50->25), FAOP64625 (25->75), FAOP70616
+(75->65). Full detail: journal/2026-08-16-lot-size-audit.md.
+
+WHY THIS MATTERS: NSE grandfathers an already-listed contract at its
+ORIGINAL lot size until that specific contract's own expiry, rather than
+switching everything on one calendar date. Since weekly contracts are
+listed months ahead, two different lot sizes can genuinely coexist across
+different expiries on the SAME trade date. Confirmed concretely:
+2025-01-02's same-day-expiry contract was already lot size 75, while
+2025-01-30's (a LATER date) was still 25. A simple date-range table
+CANNOT represent this correctly for a specific contract.
+
+THE FIX: src/lot_size.py's get_lot_size_for_contract(trade_date,
+expiry_date) reads NewBrdLotQty directly from that date's own bhavcopy
+for the specific contract -- authoritative. Falls back to
+config/lot_size_history.csv (a clean date-range table, known-approximate
+inside the ~2-3 month transition windows) ONLY when no bhavcopy is
+available locally. ALWAYS returns (lot_size, source) as a tuple -- the
+source tells you which path was used, so an approximation can never be
+silently mistaken for ground truth. get_lot_size(trade_date) is the
+same-day-expiry special case. Regression test in tests/test_lot_size.py
+guards the exact bug this fixed (2025-01-30 returning 75 when the real
+answer is 25).
+
+CONSEQUENCE FOR REPORTING: because lot size is neither constant nor
+knowable from a date alone without checking the actual contract, POINTS
+is the primary, durable metric everywhere in this project from the lot-
+size-audit onward. `pnl_points = (call_entry + put_entry) - (call_exit
++ put_exit)` never touches lot size and is exactly reproducible
+regardless of any lot-size correction. Rupees are reported as a
+secondary, explicitly-dated conversion using the real per-contract lot
+size, never a flat assumption, from that point forward.
+
+The original 136-trade baseline's rupee total (Rs 171,473.25, in
+RESULTS.md) used a flat lot size of 65 for every trade -- overstated for
+the 50- and 25-lot eras, understated for the 75-lot era. The corrected
+figure (below) uses the actual per-trade lot size.
+
+================================================================================
+6. CORRECTED HEADLINE FIGURES (137 TRADES)
+================================================================================
+
+The baseline is 137 trades, 2024-01-04 to 2026-08-11, including the
+Monday 2025-10-20 correction (section 2, item 11 in section 4).
+Zero-cost, points primary:
+
+  Trades:                    137
+  Total P&L:                 2,672.20 points   (Rs 151,221.50 at actual
+                                                 per-contract lot sizes)
+  Win rate:                  81.02%
+  Worst single trade:        -249.20 points (2025-04-17; also lot-size-
+                                              corrected: Rs -18,690.00 at
+                                              its real lot size, 75 --
+                                              NOT Rs -16,198.00, which
+                                              used the wrong flat 65)
+  Max drawdown:               303.50 points
+  2024-06-04 stress scenario: -776.60 points (Rs -19,415.00 at its real
+                                               lot size, 25 -- NOT the
+                                               original Rs -50,479.00,
+                                               which also used flat 65)
+
+None of these corrections change any HEADLINE CONCLUSION versus the
+original 136-trade / flat-lot-65 reporting -- see
+RESULTS_EXTENSIONS.md for the full accounting of what changed and by
+how much, category by category (baseline total, worst trade, calendar-
+luck stress figure, event base rate, strike-distance experiment
+explicitly NOT re-run to preserve its own pre-registration discipline,
+every-day extension).
+
+DO NOT compute a "138th" or later correction casually. If you find
+another gap the same way this one was found (see section 2's warning
+about the holiday-rollback limitation), follow the SAME discipline:
+record the inclusion/exclusion decision and commit it BEFORE computing
+that trade's P&L.
+
+================================================================================
+7. PRE-REGISTRATION DISCIPLINE AND COMMIT HASHES THAT MATTER
+================================================================================
+
+Every experiment in this project that could be influenced by seeing its
+own result first was pre-registered: parameters, selection criteria, and
+(where relevant) a tune/holdout split, written down and committed BEFORE
+any result existed. Commit timestamps are the evidence.
+
+  fe262e9  Initial commit
+  902da2c  Baseline strategy parameters pre-registered (before first backtest)
+  630d1b0  136-trade baseline result
+  2405781  RESULTS_EXTENSIONS.md created (RESULTS.md frozen from here on)
+  dc72761  Lot-size 4-regime audit
+  3b75ed9  lot_size.py fixed to prefer bhavcopy over the history table
+  14a0b8f  Forward-only paper blotter added
+  29f300a  28 event-day case studies
+  9019efa  Strike-distance grid PRE-REGISTERED (before any result)
+  c6b5158  Strike-distance grid tune-set result
+  651903f  Strike-distance grid flatness assessment
+  c0ebbda  Holdout-examination departure recorded BEFORE opening holdout
+  d012168  Strike-distance holdout result (baseline did NOT hold up)
+  2a93f8a  Every-day extension PRE-REGISTERED (before any download)
+  060e104  647-day full download (download only, no analysis)
+  7d166f7  Missing-137th-trade INCLUSION DECISION recorded BEFORE its
+           P&L was computed
+  995e6db  Corrected 137-trade baseline run
+  1eda0c9  Every-day extension Phase B result (4/5 predictions failed)
+  2d5d657  DTE confound check (corrects the Phase B DTE=5 narrative)
+
+If you're auditing whether a decision came before or after its result,
+`git log` and `git show <hash>` are the ground truth -- the journal
+entries narrate the same thing but the commit graph is authoritative.
+
+================================================================================
+8. STANDING PROTECTED FILES -- DO NOT TOUCH WITHOUT EXPLICIT NEW PERMISSION
+================================================================================
+
+Across essentially every task in this project's history, these files are
+off-limits unless I say otherwise IN THAT SPECIFIC TASK:
+
+  RESULTS.md                       -- frozen historical record of the
+                                       original (flat-lot-65, 136-trade)
+                                       findings. Superseded numbers live
+                                       in RESULTS_EXTENSIONS.md instead.
+                                       NEVER edit RESULTS.md to match a
+                                       correction -- that would erase the
+                                       fact that an error was found and
+                                       fixed, which is itself part of the
+                                       record.
+  config/strategy.json             -- the pre-registered baseline
+                                       parameters (0.5% distance, 1000
+                                       volume filter, flat lot_size: 65
+                                       for backward-compatible reproduction
+                                       of the original run).
+  src/backtest_strangle.py         -- the core backtest engine. Reused via
+                                       import everywhere (see below), never
+                                       reimplemented, and its logic is not
+                                       to be modified casually since many
+                                       other scripts depend on its exact
+                                       behavior.
+  outputs/backtest_trades.csv      -- the ORIGINAL 136-trade result.
+                                       Corrected version is the separate
+                                       file outputs/backtest_trades_137.csv.
+  outputs/paper_blotter.csv        -- the live forward-only blotter (see
+                                       section 10). Never touched by any
+                                       backtest or analysis script.
+
+If a task doesn't explicitly reopen one of these for editing, treat it as
+permanently protected for that task.
+
+REUSE CONVENTION: nearly every analysis script in src/ imports
+backtest_strangle.select_strikes() and/or backtest_strangle.run_backtest()
+rather than reimplementing strike selection or P&L math. The common
+trick for feeding a script's own subset of data through run_backtest()
+without touching the real file is to monkeypatch its module-level
+CHAIN_PATH constant to a temporary CSV for the duration of one call, then
+restore it. Look at src/event_day_study.py, src/strike_distance_grid.py,
+or src/everyday_backtest.py for worked examples before writing a new
+analysis script from scratch.
+
+================================================================================
+9. FULL FILE MAP (as of this document)
+================================================================================
+
+Root:
+  RESULTS.md                    -- frozen original findings, never edited
+  RESULTS_EXTENSIONS.md         -- current corrected findings, living doc
+  PROJECT_HANDOVER_V2.txt       -- this file
+
+config/  (pre-registrations and parameters)
+  strategy.json                 -- baseline parameters (protected)
+  strategy_with_costs.json      -- costed variant of the same
+  lot_size_history.csv          -- fallback date-range lot-size table
+  event_calendar.csv            -- 47 cited scheduled events, 2024-2026
+  strike_distance_experiment.json  -- strike-distance grid pre-registration
+  everyday_experiment.json      -- every-day extension pre-registration
+
+src/  (every script; nearly all reuse backtest_strangle.py, never
+       reimplement its logic -- see section 8)
+  backtest_strangle.py          -- core engine (protected)
+  download_bhavcopy.py          -- targeted expiry-day downloader
+  download_all_days.py          -- every-trading-day downloader (647 days)
+  extract_chain.py              -- builds the 136-trade processed chain
+  move_analysis.py              -- index move distribution analysis
+  filter_analysis.py            -- VIX/event filter backtests
+  test_fo_bhavcopy.py           -- one-off bhavcopy exploration (early)
+  paper_blotter.py              -- ongoing forward-only recorder (section 10)
+  event_day_study.py            -- 28 non-expiry event-day case studies
+  event_winners_analysis.py     -- statistical test of event-day P&L
+  wing_insurance_analysis.py    -- protective-wings overlay analysis
+  margin_return_analysis.py     -- return-on-margin, naked vs winged
+  regime_extrapolation.py       -- 2016-2023 ESTIMATE (not a backtest)
+  lot_size.py                   -- the authoritative lot-size lookup
+  strike_distance_grid.py       -- strike-distance tune-set backtest
+  strike_distance_holdout.py    -- strike-distance holdout (separate
+                                    script, deliberately not merged into
+                                    the tune-set script)
+  preholiday_analysis.py        -- pre-holiday-session exploratory test
+  build_corrected_baseline.py   -- builds the 137-trade corrected baseline
+  everyday_backtest.py          -- every-day extension, both variants,
+                                    all DTE buckets, Step 1 correctness
+                                    gate built in
+
+data/
+  raw/                          -- bhavcopy zips (gitignored, 647 files
+                                    if fully downloaded), manifests
+                                    (tracked), nifty50_daily.csv (index
+                                    data), *_SOURCE.txt provenance notes
+  processed/nifty_expiry_day_chains.csv -- the 136-date same-day-expiry
+                                    chain extract_chain.py builds
+
+outputs/  (every result artifact; too many to list individually here --
+           file names are self-describing; the ones ending _137 or with
+           "corrected" in the name are the current, superseding versions)
+
+journal/  (the full chronological lab notebook; one or more dated entries
+           per finding, INCLUDING corrections when an earlier entry was
+           wrong -- never silently deleted or edited away)
+
+tests/
+  test_lot_size.py              -- regression test for the lot-size fix
+
+================================================================================
+10. THE ONGOING TUESDAY (OR THURSDAY, PRE-REGIME) BLOTTER ROUTINE
+================================================================================
+
+src/paper_blotter.py runs ONCE per real NIFTY weekly expiry day, AFTER
+market close, once NSE has published that day's bhavcopy. It downloads
+that exact date only (no holiday rollback -- if the file isn't there,
+that's the answer, not a reason to substitute another date), confirms it
+really was a same-day-expiry day, and if so applies the pre-registered
+rule exactly (reusing backtest_strangle.select_strikes() directly) and
+appends one row to outputs/paper_blotter.csv, including a blank `notes`
+column for manual annotation. It is idempotent -- a date already recorded
+is skipped, and existing rows (including hand-written notes) are never
+rewritten.
+
+THIS NEVER PLACES, SIMULATES PLACING, OR CONNECTS TO ANYTHING THAT PLACES
+A LIVE ORDER. It is a record of what the rule would have done, nothing
+more.
+
+Forward entries here must NEVER be merged with, or reported alongside as
+one combined number with, the historical backtest (outputs/backtest_trades.csv
+or outputs/backtest_trades_137.csv). A backtest already knows every
+trade's outcome before analysis begins; forward paper trading doesn't.
+Mixing them would launder one kind of evidence into looking like the
+other. Any future summary of blotter performance should stand entirely
+on its own, dated from whenever it actually starts accumulating real
+entries.
+
+Run it with: .venv/bin/python src/paper_blotter.py
+(optionally --date YYYY-MM-DD to backfill a specific past expiry day;
+defaults to today.)
+
+================================================================================
+11. REMAINING WORK -- NOT STARTED: THE PLEDGED-COLLATERAL STUDY
+================================================================================
+
+This has NOT been started. My own description of it, recorded here as
+given so a future session has the actual framing rather than a
+paraphrase that drifts from what I meant:
+
+THE IDEA: I hold long-term equity positions I don't intend to sell. NSE
+brokers let you PLEDGE existing shareholdings as collateral margin for
+F&O positions, instead of posting cash margin. The question is whether
+this strategy could be run as an OVERLAY on top of my existing holdings,
+using pledged shares as the margin source rather than fresh cash -- a
+"return stacking" framing: the shares keep doing whatever they do
+(dividends, long-term appreciation, no change in my holding intent), and
+the strangle premium is an additional return stream stacked on top,
+funded by collateral that would otherwise just sit there.
+
+THE WRONG-WAY-RISK CONCERN (my own flag, needs to be taken seriously, not
+waved away): a short strangle loses the most on a big adverse index move.
+If my pledged collateral is broad-market equity exposure, a bad day for
+the index is very plausibly ALSO a bad day for my pledged shares' value
+-- margin calls or forced deleveraging on the options side could coincide
+with the pledged collateral itself being worth less, at the worst
+possible time. This is the textbook definition of wrong-way risk and
+needs to be modeled explicitly, not assumed away because it "sounds
+diversified."
+
+THE SEBI CASH-MARGIN REQUIREMENT (needs verification from PRIMARY
+sources, not assumed): my understanding is SEBI requires some minimum
+percentage of margin to be in CASH (or cash-equivalent) even when using
+pledged securities for the rest -- meaning this can't be 100% collateral-
+funded regardless of how much stock is pledged. The exact percentage,
+which segment(s) it applies to, and whether it's changed recently all
+need to be checked against SEBI's own circulars or NSE's own margin
+framework documentation, the same standard this project has held itself
+to everywhere else (see the lot-size and holiday sections above -- verify
+against the primary source, don't trust a secondary summary blindly).
+
+MY OWN PROPOSAL FOR DAMAGE CONTROL (explicitly flagged by me as something
+that NEEDS TESTING, NOT ASSUMING TO WORK): on a crash day, buy MORE of
+the pledged shares -- the idea being that a large adverse move that hurts
+the strangle might also make the long-term holding cheaper to add to,
+partially offsetting the margin-call risk with a lower average cost basis
+on the equity side. This is a hypothesis about a specific mechanism, not
+a settled plan. Before treating it as a mitigation, it needs to be
+modeled against actual historical crash days (this project already has
+several real ones: 2024-06-04 is the obvious first test case, and the
+2020 COVID period from the regime-extrapolation estimate, caveated
+appropriately since that period has no real option data) to see whether
+buying more shares on the worst days actually would have offset enough
+of the margin pressure to matter, or whether it's a comforting idea that
+doesn't hold up numerically.
+
+WHAT A FIRST PASS AT THIS STUDY SHOULD PROBABLY LOOK LIKE (my own rough
+sketch, not a commitment to this exact structure -- reconsider if a
+better approach is obvious once you're in it):
+  1. Pre-register the question and the metric before computing anything,
+     same as every other study in this project.
+  2. Verify the actual SEBI cash-margin-percentage requirement from a
+     primary source (SEBI circular or NSE margin framework doc), cited,
+     the same way the lot-size circulars were verified in this project
+     (the Diwali holiday explanation, by contrast, was NOT verified
+     against a primary source -- see "Open questions -- claims to
+     verify" below -- do not repeat that gap here).
+  3. Model margin requirement per trade under a pledged-collateral
+     assumption (using the margin methodology already built in
+     outputs/margin_return_analysis.csv as a starting point, not from
+     scratch).
+  4. Explicitly model the wrong-way-risk correlation -- does the pledged
+     collateral's value actually move against the strangle on the worst
+     days in this project's own data? Test this, don't assume a
+     correlation coefficient.
+  5. Test the "buy more on crash days" proposal against real historical
+     crash days in this project's data, reporting whether it would have
+     helped and by how much, not whether it sounds reasonable.
+  6. Report honestly if the answer is "this doesn't work" -- that would
+     be as valid and useful a finding as any other result in this
+     project's history (see: the strike-distance grid, the pre-holiday
+     hypothesis, four of five every-day predictions -- this project's
+     track record is full of hypotheses that didn't hold up, and that's
+     fine).
+
+No file for this exists yet. Start with a pre-registration file in
+config/, following the exact pattern of config/strike_distance_experiment.json
+or config/everyday_experiment.json, and a corresponding journal entry,
+before writing any analysis code.
+
+================================================================================
+12. OPEN QUESTIONS -- CLAIMS TO VERIFY
+================================================================================
+
+Found during a verification pass (2026-08-16) and not yet resolved. Do not
+treat any of these as settled until they've been checked against a primary
+source and this section updated.
+
+1. THE THURSDAY->TUESDAY EXPIRY REGIME CHANGE (section 2): established from
+   this project's own bhavcopy data (same-day-expiry rows shift weekday
+   starting 2025-09-02), but no NSE circular confirming this change or its
+   effective date has been located or cited anywhere in this project. An
+   earlier version of this document claimed it was "confirmed via real
+   circulars" -- that was wrong and has been corrected. TO DO: find and cite
+   the actual NSE circular (if one exists) that announced this
+   standardization, or explicitly note none could be found.
+
+2. THE 2025-10-21 DIWALI / MUHURAT TRADING EXPLANATION (section 2): this
+   project has directly verified, from its own data, that 2025-10-21's
+   bhavcopy exists but contains zero genuine same-day-expiry NIFTY rows,
+   and that 2025-10-20 (Monday) does contain 186 such rows -- the real
+   expiry that week was Monday. What has NOT been verified is the reason
+   given for why 21 October 2025 behaved this way: that it was an official
+   NSE holiday for Diwali Laxmi Pujan with a ceremonial one-hour Muhurat
+   Trading session. That explanation came from general/secondary knowledge,
+   not a citation. TO DO: check NSE's official trading holiday calendar for
+   2025 to confirm (or replace) this explanation.
+
+3. THE SEBI CASH-MARGIN-PERCENTAGE REQUIREMENT (section 11): already
+   self-flagged there as needing verification from a primary source (SEBI
+   circular or NSE margin framework doc) before the pledged-collateral
+   study can rely on it. Restated here so this section is a complete list.
+
+4. THE LOT-SIZE CIRCULARS (FAOP61415, FAOP64625, FAOP70616; section 5,
+   config/lot_size_history.csv): these DO have cited URLs
+   (nsearchives.nseindia.com PDF links) and the resulting lot-size regimes
+   are independently cross-checked against this project's own NewBrdLotQty
+   data, which is the stronger form of verification used elsewhere in this
+   project. However, the PDF URLs themselves have not been fetched and
+   read to confirm they say what this project asserts they say. Lower
+   priority than items 1-3 since the data-side cross-check is solid
+   either way, but noted for completeness.
+
+5. BROKER PASS-THROUGH OF THE 50/50 CASH REQUIREMENT (pledged-
+   collateral study, config/pledged_collateral_experiment.json): SEBI's
+   Master Circular explicitly states its 50% cash-or-equivalent
+   collateral requirement may NOT be applied at individual client
+   level (Para 1.1.13.4, primary-verified). Broker practice reportedly
+   passes this through to clients anyway -- Zerodha states the
+   clearing corporation requires the broker to fund any client cash
+   shortfall, and HDFC Securities charges daily interest on
+   cash-component deficiency. This is SECONDARY broker-practice
+   information, not a SEBI/NSE confirmation that client-level
+   pass-through is itself regulatory-required (SEBI's own text says
+   the opposite at the client level). TO DO: verify whether broker
+   pass-through is contractual/discretionary or is itself mandated by
+   NSE/NSCCL rules, from a primary source.
+
+6. REPORTED APRIL 2026 MARGIN TIGHTENING (pledged-collateral study,
+   config/pledged_collateral_experiment.json): Business Standard
+   (2026-03-31) reportedly stated brokers would be required to hold
+   50% of F&O margin in cash and that RBI was raising equity
+   collateral haircuts to 40%. NOT verified against any SEBI, NSE, or
+   RBI primary source. TO DO: check for the actual SEBI/NSE circular
+   or RBI notification, if any, that this reporting refers to.
+
+================================================================================
+13. CLAIMS VERIFIED FROM DATA VS CLAIMS TAKEN FROM SECONDARY SOURCES
+================================================================================
+
+A standing distinction worth keeping visible, added after a verification
+pass found that this document had, in a couple of places, described a
+secondary-source or inferred claim using language ("confirmed," "verified")
+that overstated what had actually been checked. Keep this section updated
+as new claims are added to the project.
+
+VERIFIED FROM THIS PROJECT'S OWN DATA (re-derivable by re-running the
+scripts against the raw bhavcopy files, not dependent on trusting an
+external source):
+  - The 4 lot-size regimes and their trade counts (section 5) -- read
+    directly from NewBrdLotQty in each contract's own bhavcopy row.
+  - The Thursday->Tuesday expiry weekday shift occurring at 2025-09-02
+    (section 2) -- observed directly as a change in which weekday carries
+    same-day-expiry NIFTY rows. (The REASON NSE made this change, and
+    whether 2025-09-02 is the regulatory effective date rather than just
+    the date it first shows up in this data, is not verified -- see open
+    question 1 above.)
+  - 2025-10-21 containing zero same-day-expiry NIFTY rows and 2025-10-20
+    containing 186 (section 2) -- read directly from the raw bhavcopy
+    files. (The Diwali/Muhurat EXPLANATION for why is not verified -- see
+    open question 2 above.)
+  - The NSE F&O bhavcopy archive's hard limit of no data before
+    2024-01-01 (section 3) -- confirmed by direct HTTP probes of dozens of
+    2023 and 2024+ dates.
+  - All 137-trade headline figures (section 6) -- reproduced directly from
+    outputs/backtest_trades_137.csv in a 2026-08-16 verification pass, and
+    the 2024-06-04 stress figure independently cross-checked between two
+    unrelated pipelines (src/event_day_study.py and
+    src/everyday_backtest.py), both landing on -776.60 points.
+
+VERIFIED AGAINST A CITED REGULATORY PRIMARY SOURCE (pledged-collateral
+study, journal/2026-08-17-pledged-collateral-preregistration.md): four
+facts checked directly against SEBI Master Circular Chapter 4,
+"Comprehensive Risk Management for Cash Market and Debt Segment,"
+December 2024 --
+https://www.sebi.gov.in/sebi_data/commondocs/dec-2024/RE_Chapter%204%20-%20Comprehensive%20Risk%20Management%20for%20Cash%20Market%20and%20Debt%20SegmeFINAL_p.pdf
+  - Para 1.1.13.4 -- clearing members must maintain at least 50% of
+    total collateral as cash or cash equivalents; SEBI states
+    explicitly this requirement may NOT be applied at individual
+    client level.
+  - Para 1.1.2, liquid assets table, "Other Liquid Assets" note 1 and
+    note iv -- non-cash collateral cannot be used to meet
+    mark-to-market losses; MTM must be met in cash or cash
+    equivalents.
+  - Para 1.1.2 -- equity shares as collateral carry a VaR-based
+    haircut of 6 sigma, subject to a minimum of 9%. The haircut is
+    dynamic and widens with volatility.
+  - Para 1.1.2 -- total Other Liquid Assets may not exceed total Cash
+    Equivalents.
+  This category is distinct from "VERIFIED FROM THIS PROJECT'S OWN
+  DATA" above: these facts rest on a directly quoted external
+  regulatory document, not on something re-derivable by re-running
+  this project's own scripts against its own data.
+
+TAKEN FROM SECONDARY SOURCES, NOT YET CHECKED AGAINST A PRIMARY SOURCE:
+  - The Diwali Laxmi Pujan / Muhurat Trading explanation for 2025-10-21
+    (section 2, open question 2).
+  - The claim that an NSE circular exists confirming the Thursday->Tuesday
+    expiry standardization (section 2, open question 1) -- no such circular
+    has actually been found; this project's confidence in the *date* rests
+    entirely on its own data, not on any circular.
+  - The SEBI cash-margin-percentage requirement (section 11, open
+    question 3) -- not yet looked up at all, self-flagged from the start.
+  - Broker pass-through of the 50% cash-collateral requirement to
+    individual clients (Zerodha, HDFC Securities statements), despite
+    SEBI's own text saying this requirement does not apply at client
+    level (pledged-collateral study, open question 5).
+  - The reported April 2026 tightening -- 50% cash requirement
+    enforcement and an RBI haircut increase to 40% -- per Business
+    Standard, 2026-03-31 (pledged-collateral study, open question 6).
+
+CITED BUT NOT INDEPENDENTLY FETCHED:
+  - The three lot-size circulars, FAOP61415/FAOP64625/FAOP70616 (section 5,
+    open question 4) -- real URLs are on record and the resulting regimes
+    are cross-checked against this project's own data, but the PDFs
+    themselves have not been fetched and read to confirm their content
+    matches what's asserted.
+
+================================================================================
+END OF HANDOVER
+================================================================================

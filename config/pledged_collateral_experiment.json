@@ -1,0 +1,144 @@
+{
+  "status": "EXPLORATORY — does not modify or replace the pre-registered 137-trade baseline",
+  "description": "Pre-registration for the pledged-collateral overlay study. Written and committed before any analysis code for this experiment is written or run. No number has been computed at the time this file is created.",
+
+  "research_question": "If the margin for this strangle were funded by pledging an existing long-term equity holding rather than by fresh cash, would the overlay ever have forced a sale of those pledged shares -- and how much cash must sit idle for it not to?",
+
+  "framing": "Pledging does not change the strategy's P&L by a single point. It changes capital efficiency and it changes what is at risk. This study measures the tail-risk price of that capital efficiency. It is not a study of whether the strangle is profitable -- that question is already answered elsewhere in this project and this study may not claim credit for it.",
+
+  "regulatory_basis": {
+    "primary_source": {
+      "document": "SEBI Master Circular Chapter 4, \"Comprehensive Risk Management for Cash Market and Debt Segment\", December 2024",
+      "url": "https://www.sebi.gov.in/sebi_data/commondocs/dec-2024/RE_Chapter%204%20-%20Comprehensive%20Risk%20Management%20for%20Cash%20Market%20and%20Debt%20SegmeFINAL_p.pdf"
+    },
+    "verified_facts": [
+      {
+        "id": 1,
+        "para": "1.1.13.4",
+        "fact": "Clearing members must maintain at least 50% of total collateral as cash or cash equivalents; SEBI states explicitly this requirement may NOT be applied at individual client level.",
+        "status": "PRIMARY-VERIFIED"
+      },
+      {
+        "id": 2,
+        "para": "1.1.2, liquid assets table, \"Other Liquid Assets\" note 1 and note iv",
+        "fact": "Non-cash collateral CANNOT be used to meet mark-to-market losses; MTM must be met in cash or cash equivalents.",
+        "status": "PRIMARY-VERIFIED"
+      },
+      {
+        "id": 3,
+        "para": "1.1.2",
+        "fact": "Equity shares as collateral carry a VaR-based haircut of 6 sigma, subject to a minimum of 9%. The haircut is dynamic and widens with volatility.",
+        "status": "PRIMARY-VERIFIED"
+      },
+      {
+        "id": 4,
+        "para": "1.1.2",
+        "fact": "Total Other Liquid Assets may not exceed total Cash Equivalents.",
+        "status": "PRIMARY-VERIFIED"
+      }
+    ],
+    "secondary_facts_not_primary_verified": [
+      {
+        "id": 5,
+        "fact": "Broker practice passes the 50/50 requirement through to clients despite fact 1 -- Zerodha states the clearing corporation requires the broker to fund any client cash shortfall; HDFC Securities charges daily interest on cash-component deficiency.",
+        "status": "SECONDARY, NOT PRIMARY-VERIFIED",
+        "source": "Zerodha and HDFC Securities public statements (not independently fetched/cited by URL in this file)"
+      },
+      {
+        "id": 6,
+        "fact": "Reported April 2026 tightening: brokers required to hold 50% of F&O margin in cash, and RBI reportedly raising equity collateral haircuts to 40%.",
+        "status": "SECONDARY, NOT VERIFIED against SEBI or RBI primary sources",
+        "source": "Business Standard, 2026-03-31"
+      }
+    ]
+  },
+
+  "model": {
+    "collateral": {
+      "description": "A stylised NIFTY-tracking proxy. Fixed unit count purchased at 2024-01-04, value floats with the index thereafter.",
+      "beta_base_case": 1.0,
+      "beta_sensitivities": [0.7, 1.3],
+      "base_pot_size_rupees": 1000000
+    },
+    "position": {
+      "primary": "1 lot, hedged (iron condor) version",
+      "sensitivity_only_note": "Naked version is a labelled sensitivity only -- its margin is a flat 10%-of-notional approximation and no conclusion may rest on it."
+    },
+    "margin": {
+      "source": "Recompute per trade from outputs/backtest_trades_137.csv using its real lot_size column. Do NOT reuse any rupee column from outputs/margin_return_analysis.csv.",
+      "winged_margin_formula": "(max spread width x lot size) - net credit at entry"
+    },
+    "haircut": {
+      "base_case_pct": 9,
+      "base_case_source": "SEBI floor, primary-verified (fact 3)",
+      "sensitivities_pct": [20, 40],
+      "sensitivity_40_note": "Rests on unverified secondary source (fact 6) and must be labelled as such wherever reported."
+    },
+    "cash_fraction": {
+      "base_case_pct_of_margin_in_cash": 50,
+      "base_case_source": "Broker practice, secondary (fact 5)",
+      "sensitivity_pct_of_margin_in_cash": 0,
+      "sensitivity_source": "What the regulation literally permits at client level, primary-verified (fact 1)"
+    },
+    "available_margin_formula": "A = C + min(U, C), where C = cash and U = haircut-adjusted collateral value. The min() term implements primary fact 4 (Other Liquid Assets may not exceed Cash Equivalents).",
+    "breach_types": {
+      "type_1_margin_breach": "Total margin requirement exceeds A.",
+      "type_2_cash_breach": "Peak intraday MTM loss exceeds C. Follows from primary fact 2 (pledged shares cannot meet MTM)."
+    },
+    "peak_mtm_loss": {
+      "reported_as": "A RANGE, never a single number.",
+      "method_a_close_based": "Using call_exit / put_exit.",
+      "method_b_high_based_upper_bound": "Using HghPric for both short legs from data/processed/nifty_expiry_day_chains.csv.",
+      "caveat_pre_registered": "The call's high and the put's high need not occur simultaneously, so method (b) is a conservative upper bound on a path that may never have existed, not a measured worst moment."
+    }
+  },
+
+  "primary_metric": "LOCKED -- nothing else may be used to judge the result: whether any Type 1 or Type 2 breach occurs across the 137 trades, and the size in rupees of the worst shortfall of each type.",
+
+  "secondary_metrics": [
+    "Minimum coverage ratio across the sample.",
+    "Return on the cash actually posted."
+  ],
+
+  "pre_registered_rule_departure": {
+    "departure": "This study reports in RUPEES, not points, departing from the project's standing points-primary rule.",
+    "justification": "Collateral value, haircuts and cash buffers are inherently rupee quantities with no points equivalent.",
+    "mitigation": "All margin figures use real per-trade lot size from backtest_trades_137.csv, never a flat assumption, so the rupee figures remain internally consistent across all four lot-size regimes."
+  },
+
+  "crash_day_buying_proposal": {
+    "claim_A_same_day_margin_relief": {
+      "pre_registered_verdict": "Mechanically FALSE",
+      "reasoning": "Newly purchased shares settle T+1 and require further pledge processing, so they cannot meet a same-day margin or MTM call.",
+      "treatment": "Documented as a mechanism, not tested numerically."
+    },
+    "claim_B_cost_basis": {
+      "testable": true,
+      "funding_source": "Crash-day purchases funded from a ring-fenced cash pot held SEPARATELY from the margin cash C, so the two uses of cash are never double-counted.",
+      "caveat_pre_registered": "If this ring-fenced cash exists, it could have been posted as margin instead -- the proposal is partly self-cancelling and the write-up must say so."
+    }
+  },
+
+  "crash_threshold": {
+    "definition": "X = the 95th-percentile adverse open-to-close move in data/raw/nifty50_daily.csv over 2016-01-01 to 2023-12-31.",
+    "rationale": "This period is deliberately OUTSIDE the 2024+ window being tested, so the threshold cannot be tuned to the trades it judges.",
+    "computation_timing": "Compute X in the analysis phase, not now."
+  },
+
+  "out_of_sample_stress_case": {
+    "date": "2024-06-04",
+    "note": "NOT an expiry day and NOT one of the 137 baseline trades. Report it separately as a stress scenario, never pooled with the 137-trade results."
+  },
+
+  "predictions": [
+    {"id": 1, "statement": "Type 2 (cash) breaches will occur more often than Type 1 (margin) breaches."},
+    {"id": 2, "statement": "At base-case parameters, at least one breach of some type occurs across the 137 trades."},
+    {"id": 3, "statement": "The high-based peak-MTM measure produces at least twice as many breaches as the close-based measure."},
+    {"id": 4, "statement": "Beta 1.3 produces more breaches than beta 0.7."},
+    {"id": 5, "statement": "The 2024-06-04 stress scenario breaches at base-case parameters."}
+  ],
+
+  "reporting_rule": "Report pass/fail honestly for each prediction in the analysis phase; do not soften a failure.",
+
+  "protected_files_note": "This study must never modify src/margin_return_analysis.py or outputs/margin_return_analysis.csv. That file's flat LOT_SIZE=65 is a known, accepted, documented inconsistency and is out of scope for this study -- this study computes its own margin figures independently from outputs/backtest_trades_137.csv instead of reusing that file's numbers."
+}

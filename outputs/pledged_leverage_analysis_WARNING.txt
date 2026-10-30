@@ -1,0 +1,91 @@
+================================================================================
+!!! WARNING -- SUPERSEDED RUN. DO NOT QUOTE ANY HIGH-BASED RUPEE OR POINTS
+!!! TOTAL FROM outputs/pledged_leverage_analysis.csv.
+================================================================================
+
+This note sits BESIDE outputs/pledged_leverage_analysis.csv. That CSV has NOT
+been edited. It is kept exactly as committed (2a0ff3e) as the historical
+record of a run whose P&L booking turned out to be indefensible -- this
+project does not silently patch a superseded finding.
+
+The DESIGN of this study is sound and was not withdrawn. Only the price at
+which forced-close losses were BOOKED was wrong.
+
+--------------------------------------------------------------------------------
+THE SPECIFIC FLAW
+--------------------------------------------------------------------------------
+
+The forced-close rule is correct and necessary: if peak intraday
+mark-to-market loss exceeds cash C, the position is shut rather than carried
+quietly to the close.
+
+The error was in what price that forced close was booked at. The run measured
+the intraday worst case by taking BOTH short legs at their OWN daily High
+price (rows with mtm_measure = "high"), then used that same worst-tick price
+as the REALIZED EXIT PRICE.
+
+The call's daily high and the put's daily high need not occur at the same
+moment. A short strangle is hurt by the index moving hard in ONE direction,
+which pushes one leg up while pushing the other down. Both legs at their
+individual daily highs simultaneously describes a moment that, on most days,
+never existed.
+
+The study's OWN pre-registration said this in advance -- method (b) is
+"a conservative upper bound on a price path that may never have actually
+existed, not a measured worst moment. It's a ceiling, not an observation."
+The run then treated that ceiling as an observation.
+
+Using a never-observed price to TRIGGER a forced close is conservative and
+defensible. Using it to SIZE the realized loss records an impossible loss as
+a real one.
+
+--------------------------------------------------------------------------------
+WHAT IS INVALID IN THIS FILE
+--------------------------------------------------------------------------------
+
+INVALID -- every rupee and points TOTAL on rows where mtm_measure = "high":
+Arm A and Arm B realized totals, gross premium, return on C, and worst-trade
+loss under that measure.
+
+Its most visible symptom: Arm B's high-based totals are NEGATIVE at every
+cash level, and in all 36 beta-by-haircut-by-cash cells. Arm A's high-based
+totals are POSITIVE at every cash level, in all 36 cells. The flawed booking
+hit the levered arm disproportionately because Arm B holds double the lots --
+the same impossible per-lot loss applied to twice the position was enough to
+drive Arm B negative while leaving Arm A positive. Any statement that "the
+high-based totals came out negative" describes ARM B ONLY and must not be
+repeated as a blanket claim about both arms.
+
+STILL VALID:
+  - Forced-close COUNTS under both measures, and the Arm A vs Arm B
+    comparison of those counts. Counting "did peak loss exceed C" does not
+    depend on the price the exit is booked at. The corrected run's S3 counts
+    reproduce this file's high-based counts exactly, confirming the trigger
+    formula never changed.
+  - All close-based rows (mtm_measure = "close"). A closing price is a real
+    observed number. These are reproduced identically as scenario S2 in the
+    corrected file.
+
+--------------------------------------------------------------------------------
+SUPERSEDED BY
+--------------------------------------------------------------------------------
+
+  outputs/pledged_leverage_analysis_v2.csv       <-- the current result
+  src/pledged_leverage_analysis_v2.py
+  journal/2026-08-18-pledged-leverage-analysis.md
+  RESULTS_EXTENSIONS.md, section "Pledged collateral as leverage"
+
+The correction (commit 43de021) changes exactly one thing: when a forced
+close triggers under any measure, the booked P&L always uses the OBSERVED
+close-based price (call_exit / put_exit), never the intraday high. The
+high-based ceiling still decides WHETHER a close triggers; it no longer
+decides how much was lost. The corrected file replaces this file's two-value
+mtm_measure column with three explicit scenarios:
+
+  S1  no forced closes at all (upper bound; the calm-market picture)
+  S2  close-triggered, close-booked (identical to this file's close rows)
+  S3  high-triggered, close-booked  <-- THE PRIMARY CORRECTED RESULT
+
+Same pre-registered model (9137600), same 137 trades, same grid, same two
+arms. Nothing else changed.
+================================================================================

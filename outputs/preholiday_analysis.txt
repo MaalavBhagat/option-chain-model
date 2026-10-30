@@ -1,0 +1,69 @@
+EXPLORATORY -- pre-holiday session analysis
+Hypothesis (stated before looking): expiry-day trades on the last session
+before a holiday of 2+ consecutive closed days perform WORSE than other
+expiry-day trades. NOT part of the pre-registered baseline; must not
+replace or be pooled with outputs/backtest_trades.csv's own summary.
+
+Trading-day calendar source: data/raw/nifty50_daily.csv (yfinance ^NSEI).
+NOT the bhavcopy manifest (data/raw/download_manifest.csv) -- the manifest
+only covers dates this project chose to download and has real gaps; the
+yfinance daily series has one row per actual NSE trading day, no gaps,
+which is what's needed to correctly compute the next trading day.
+
+==============================================================================
+FLAGGED TRADES (next trading day is 2+ calendar days later)
+==============================================================================
+
+Date        Weekday   Gap (days)    Points P&L
+2024-01-25  Thursday  4                  38.55
+2024-03-07  Thursday  4                  32.70
+2024-03-28  Thursday  4                   8.90
+2024-04-10  Wednesday 2                  21.40
+2024-08-14  Wednesday 2                  42.20
+2024-11-14  Thursday  4                  53.25
+2025-03-13  Thursday  4                  26.90
+2025-04-09  Wednesday 2                 120.00
+2025-04-17  Thursday  4                -249.20
+2025-04-30  Wednesday 2                  30.45
+2025-08-14  Thursday  4                  28.45
+2025-11-04  Tuesday   2                  33.70
+2026-03-02  Monday    2                  97.90
+2026-03-30  Monday    2                  86.95
+2026-04-13  Monday    2                  45.90
+
+==============================================================================
+FLAGGED vs UNFLAGGED COMPARISON (P&L in points)
+==============================================================================
+
+Metric                        Flagged      Unflagged
+Count                              15            121
+Mean                            27.87          18.35
+Median                          33.70          32.20
+Win rate                       93.33%         79.34%
+Worst trade                   -249.20        -193.05
+Std deviation                   82.55          66.11
+
+==============================================================================
+10 WORST BASELINE TRADES (by points) -- how many were flagged?
+==============================================================================
+
+  2025-04-17   -249.20 pts  FLAGGED
+  2024-11-28   -193.05 pts  -
+  2024-05-23   -168.40 pts  -
+  2025-01-02   -154.25 pts  -
+  2024-09-12   -153.90 pts  -
+  2026-05-12   -153.00 pts  -
+  2025-05-15   -150.60 pts  -
+  2026-01-20   -137.50 pts  -
+  2024-10-17   -120.80 pts  -
+  2025-06-26   -108.55 pts  -
+
+Flagged among the 10 worst trades: 1 / 10
+
+==============================================================================
+SIGNIFICANCE TEST
+==============================================================================
+
+Sample sizes: flagged n=15, unflagged n=121.
+Welch's t-test (unequal variances): t = 0.4300, p = 0.6728
+

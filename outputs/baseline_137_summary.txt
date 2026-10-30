@@ -1,0 +1,48 @@
+CORRECTED BASELINE -- 137 TRADES (136-trade baseline + 2025-10-20)
+Inclusion decision recorded and committed at 7d166f7 before this P&L was known.
+==============================================================================
+
+=== 2025-10-20 trade, in full ===
+  Index open: 25824.60, close: 25843.15, move: +0.0718%
+  Call strike: 26000, entry 14.90, exit 0.15
+  Put strike:  25650, entry 19.55, exit 0.15
+  P&L: 34.15 points
+  Lot size: 75 (source: bhavcopy)
+  P&L: Rs 2,561.25
+
+=== 136 vs 137, side by side ===
+Metric                          136 (original)   137 (corrected)      Change
+Trades                                     136               137          +1
+Total P&L (points)                     2638.05           2672.20      +34.15
+Total P&L (rupees, note*)           171,473.25        151,221.50  -20,251.75
+Win rate %                               80.88             81.02       +0.14
+Mean P&L (points)                        19.40             19.51       +0.11
+Median P&L (points)                      32.65             32.70       +0.05
+Worst single trade (pts)               -249.20           -249.20       +0.00
+Max drawdown (points)                   303.50            303.50       +0.00
+Longest losing streak                        2                 2          +0
+
+* 136 total rupees uses flat lot_size=65 (RESULTS.md convention, superseded);
+  137 total rupees uses actual per-contract NewBrdLotQty via src/lot_size.py.
+  This column is NOT a clean apples-to-apples rupee comparison for that reason --
+  see journal/2026-08-16-lot-size-audit.md and RESULTS_EXTENSIONS.md for the
+  separate, already-documented lot-size correction. The points comparison above
+  is the clean one.
+
+=== Where 2025-10-20 ranks among all 137 trades (1 = worst) ===
+  Rank 72 of 137 by points P&L (34.15 pts)
+  (71 trades are worse, 65 trades are better)
+
+=== Does adding it change any headline conclusion? ===
+  Win rate: 80.88% -> 81.02% (negligibly different)
+  Total P&L (points): 2638.05 -> 2672.20 (negligibly different, +1.29%)
+  Worst single trade unchanged: True
+  Max drawdown unchanged: True
+
+  PLAIN STATEMENT: 2025-10-20 was a small, ordinary winning trade -- rank 72 of 137 (worst=1) sits almost exactly at the median, not a tail event
+  in either direction, just an unremarkable typical day. Its
+  inclusion nudges every headline number slightly in the favorable direction
+  (higher win rate, higher total points, higher mean) but changes none of them
+  materially, and changes neither the worst trade nor the max drawdown at all.
+  No headline conclusion in RESULTS.md or RESULTS_EXTENSIONS.md is overturned
+  by this correction -- it is a small, positive adjustment, not a different story.

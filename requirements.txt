@@ -1,0 +1,6 @@
+pandas>=3.0
+numpy>=2.5
+scipy>=1.18
+matplotlib>=3.11
+requests>=2.34
+yfinance>=1.5

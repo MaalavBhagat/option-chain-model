@@ -1,0 +1,37 @@
+==============================================================================
+(a) HYPOTHESIS CHECK: are the 2025 lot-25 baseline trades month-end expiries?
+==============================================================================
+
+2025 baseline trades still at lot_size=25: 1
+
+Date        Weekday   Month-end expiry?   
+2025-01-30  Thursday  YES                 
+
+Month-end expiries among these: 1 / 1
+
+VERDICT: HYPOTHESIS HOLDS: every 2025 lot-25 baseline trade is a month-end expiry.
+
+==============================================================================
+(b) ARITHMETIC VERIFICATION
+==============================================================================
+
+-- Worst baseline trade, 2025-04-17 --
+  Reported (flat lot_size=65): Rs -16,198.00
+  True NewBrdLotQty: 75
+  P&L in points: -249.20
+  Corrected rupee P&L: Rs -18,690.00
+
+-- 2024-06-04 stress scenario --
+  True NewBrdLotQty: 25
+  P&L in points: -776.60
+  Corrected rupee P&L: Rs -19,415.00
+
+-- Ratio, 2024-06-04 stress scenario vs. 2025-04-17 worst actual trade --
+  In points: -776.60 / -249.20 = 3.1164x
+  In corrected rupees: Rs -19,415.00 / Rs -18,690.00 = 1.0388x
+
+(These two ratios differ because the two trades used different lot sizes --
+ 25 for 2024-06-04 vs 75 for 2025-04-17 -- so the rupee ratio is not simply
+ equal to the points ratio here, unlike a same-lot-size comparison would be.)
+
+No conclusion in any existing file was changed based on this. Report only.

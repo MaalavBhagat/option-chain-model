@@ -1,0 +1,53 @@
+EVENT BASE RATE CHECK (read-only against config/event_calendar.csv)
+No new events searched for or added. Checking only whether the existing
+pre-registered calendar distinguishes good baseline days from bad ones.
+
+==============================================================================
+10 WORST BASELINE TRADES (by points)
+==============================================================================
+
+Date        Weekday     Points P&L    Move %  In event_calendar.csv?
+2025-04-17  Thursday       -249.20     1.92%  no
+2024-11-28  Thursday       -193.05    -1.48%  no
+2024-05-23  Thursday       -168.40     1.56%  no
+2025-01-02  Thursday       -154.25     1.71%  no
+2024-09-12  Thursday       -153.90     1.31%  no
+2026-05-12  Tuesday        -153.00    -1.45%  no
+2025-05-15  Thursday       -150.60     1.49%  no
+2026-01-20  Tuesday        -137.50    -1.36%  no
+2024-10-17  Thursday       -120.80    -1.11%  no
+2025-06-26  Thursday       -108.55     1.11%  no
+
+Worst-10 hit rate: 0/10 (0%)
+
+==============================================================================
+10 BEST BASELINE TRADES (by points)
+==============================================================================
+
+Date        Weekday     Points P&L    Move %  In event_calendar.csv?
+2026-03-24  Tuesday         172.45     0.15%  no
+2024-06-06  Thursday        166.35     0.10%  no
+2024-02-01  Thursday        148.90    -0.38%  YES
+2025-01-30  Thursday        125.55     0.35%  YES
+2026-03-10  Tuesday         122.35    -0.08%  no
+2025-04-09  Wednesday       120.00    -0.27%  YES
+2025-05-29  Thursday        106.90     0.03%  no
+2026-03-02  Monday           97.90     0.84%  no
+2026-03-30  Monday           86.95    -0.97%  no
+2024-12-05  Thursday         82.40     0.69%  no
+
+Best-10 hit rate: 3/10 (30%)
+
+==============================================================================
+BASE RATE COMPARISON
+==============================================================================
+
+Overall baseline hit rate (all 136 trades): 15/136 (11.0%)
+Worst-10 hit rate: 0/10 (0%)
+Best-10 hit rate: 3/10 (30%)
+
+PLAIN READ: worst-10 has 3 fewer calendar hits than best-10, out of 10 each
+and against an overall base rate of 11.0%. With n=10 in each group,
+this small a sample cannot support a strong claim either way -- read as
+descriptive, not as evidence of predictive power.
+

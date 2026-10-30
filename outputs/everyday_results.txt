@@ -1,0 +1,83 @@
+==============================================================================
+WARNING: DTE>0 trades are STRUCTURALLY DIFFERENT from the expiry-day
+baseline (outputs/backtest_trades_137.csv, the corrected 137-trade
+expiry-day baseline). A DTE=0 option's closing price
+is near-pure intrinsic value; a DTE>0 option's closing price still
+carries real time value. NEVER pool results across DTE buckets, across
+variants, or with the expiry-day baseline.
+==============================================================================
+
+EVERY-DAY EXTENSION -- PHASE B RESULTS
+Pre-registered in config/everyday_experiment.json (commit 2a93f8a)
+Compared against the corrected 137-trade baseline (995e6db), not the
+original 136-trade file -- see journal/2026-08-16-corrected-baseline-137.md
+
+STEP 1 CORRECTNESS GATE: PASSED against all 137 trades (see terminal output above / re-run for detail)
+
+==============================================================================
+VARIANT: nearest_weekly
+==============================================================================
+
+ DTE    n  MeanPtsZC  MedPtsZC  WinRt%ZC  StdDevZC  WorstZC  MaxDDZC  MeanPrem  MeanPtsWC  WinRt%WC  VolFail
+   0  137      19.51     32.70     81.0%     67.59  -249.20   303.50     54.03      17.51     81.0%        0
+   1  124      17.58     23.53     74.2%     48.45  -258.75   635.95    107.34      15.58     72.6%        0
+   2   87       3.17     19.25     70.1%    104.78  -776.60   778.00    147.12       1.17     67.8%        0
+   3   81       5.78     17.60     66.7%     56.75  -310.55   346.00    179.32       3.78     66.7%        0
+   4   47       4.91     11.65     66.0%     31.86   -73.95   122.95    146.17       2.91     63.8%        0
+   5   51      24.02     25.90     80.4%     53.38  -192.75   192.75    209.58      22.02     78.4%        0
+   6  119       2.03     10.10     62.2%     57.21  -220.45   473.85    224.32       0.03     61.3%        0
+
+==============================================================================
+VARIANT: fixed_dte
+==============================================================================
+
+ DTE    n  MeanPtsZC  MedPtsZC  WinRt%ZC  StdDevZC  WorstZC  MaxDDZC  MeanPrem  MeanPtsWC  WinRt%WC  VolFail
+   0   --   (no trades at this DTE for this variant)   VolFail=0
+   1    4      27.31     25.52     75.0%     43.54   -19.40    19.40    142.23      25.31     75.0%        0
+   2   86       3.52     19.50     70.9%    105.34  -776.60   778.00    148.15       1.52     68.6%        0
+   3   81       5.78     17.60     66.7%     56.75  -310.55   346.00    179.32       3.78     66.7%        0
+   4   47       4.91     11.65     66.0%     31.86   -73.95   122.95    146.17       2.91     63.8%        0
+   5   52      23.79     25.75     80.8%     52.89  -192.75   192.75    208.40      21.79     78.8%        0
+   6  127       3.89     10.10     63.8%     56.69  -220.45   470.45    231.14       1.89     63.0%        0
+
+==============================================================================
+VOLUME-FILTER FAILURES BY DTE (does the filter start binding away from expiry?)
+==============================================================================
+
+  NONE. The 1,000-contract volume filter did not bind anywhere in the
+  every-day extension either, at any DTE, in either variant.
+
+==============================================================================
+PRE-REGISTERED PREDICTIONS -- DIRECT CHECK
+(journal/2026-08-16-everyday-preregistration.md)
+==============================================================================
+
+(a) Mean P&L per trade in points will DECLINE as DTE rises
+    nearest_weekly mean pts by DTE: [(0, np.float64(19.51)), (1, np.float64(17.58)), (2, np.float64(3.17)), (3, np.float64(5.78)), (4, np.float64(4.91)), (5, np.float64(24.02)), (6, np.float64(2.03))]
+    VERDICT: FAILED -- not monotonically declining
+
+(b) Win rate will fall as DTE rises
+    nearest_weekly win rate %% by DTE: [(0, np.float64(81.0)), (1, np.float64(74.2)), (2, np.float64(70.1)), (3, np.float64(66.7)), (4, np.float64(66.0)), (5, np.float64(80.4)), (6, np.float64(62.2))]
+    VERDICT: FAILED -- not monotonically falling
+
+(c) Standard deviation of P&L in points will RISE with DTE
+    nearest_weekly stddev pts by DTE: [(0, np.float64(67.59)), (1, np.float64(48.45)), (2, np.float64(104.78)), (3, np.float64(56.75)), (4, np.float64(31.86)), (5, np.float64(53.38)), (6, np.float64(57.21))]
+    VERDICT: FAILED -- not monotonically rising
+
+(d) After realistic costs, mean P&L for DTE >= 3 may be negative
+    DTE>=3 mean pts after costs: [(3, np.float64(3.78)), (4, np.float64(2.91)), (5, np.float64(22.02)), (6, np.float64(0.03))]
+    VERDICT: FAILED -- no DTE>=3 bucket went negative after costs
+
+(e) DTE=0 subset of nearest_weekly must reproduce the (now 137-trade,
+    corrected per 995e6db) expiry-day baseline exactly
+    VERDICT: HELD -- verified in Step 1's correctness gate above.
+
+==============================================================================
+STARTING HYPOTHESIS: "more trading days should mean more profit"
+==============================================================================
+
+    DTE=0 (the actual baseline) mean pts/trade: 19.51
+    DTE>0 (every other day) mean pts/trade, range: 2.03 to 24.02
+    PLAIN STATEMENT: at least one DTE>0 bucket outperforms the expiry-day
+    baseline on a per-trade basis -- the starting hypothesis is not cleanly refuted.
+

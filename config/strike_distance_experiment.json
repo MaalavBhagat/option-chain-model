@@ -1,0 +1,47 @@
+{
+  "status": "EXPLORATORY — does not replace the pre-registered 0.5/0.5 baseline",
+  "description": "Pre-registration for a strike-distance grid search. Written and committed before any backtesting code for this experiment is written or run. No P&L has been computed at the time this file is created.",
+
+  "grid": {
+    "call_distance_pct": [0.5, 0.75, 1.0],
+    "put_distance_pct": [0.5, 0.75, 1.0],
+    "units_note": "Values are percentages away from that day's index open, matching the convention already used to describe the pre-registered baseline (0.5 = 0.5%). config/strategy.json stores this as a fraction (strike_distance_pct: 0.005); this file uses the same percentage convention as the human-readable baseline label ('0.5/0.5') to avoid ambiguity about which grid cell is the existing baseline."
+  },
+  "combinations_count": 9,
+  "combinations": [
+    {"call_distance_pct": 0.5,  "put_distance_pct": 0.5,  "is_baseline": true},
+    {"call_distance_pct": 0.5,  "put_distance_pct": 0.75, "is_baseline": false},
+    {"call_distance_pct": 0.5,  "put_distance_pct": 1.0,  "is_baseline": false},
+    {"call_distance_pct": 0.75, "put_distance_pct": 0.5,  "is_baseline": false},
+    {"call_distance_pct": 0.75, "put_distance_pct": 0.75, "is_baseline": false},
+    {"call_distance_pct": 0.75, "put_distance_pct": 1.0,  "is_baseline": false},
+    {"call_distance_pct": 1.0,  "put_distance_pct": 0.5,  "is_baseline": false},
+    {"call_distance_pct": 1.0,  "put_distance_pct": 0.75, "is_baseline": false},
+    {"call_distance_pct": 1.0,  "put_distance_pct": 1.0,  "is_baseline": false}
+  ],
+
+  "primary_selection_criterion": "total_pnl_points",
+  "primary_selection_note": "total_pnl_points on the tune_set is the SOLE metric used to choose a winning combination. No other metric listed below, and no metric not listed at all, may be used for selection -- including after the fact. If a future analysis is tempted to prefer a combination for a reason other than total_pnl_points on the tune_set, that is a new, separate, and differently-labeled experiment, not a continuation of this one.",
+
+  "secondary_metrics_reported_not_selected_on": [
+    "win_rate",
+    "max_drawdown_points",
+    "worst_single_trade_points",
+    "stddev_pnl_points",
+    "volume_filter_failures_count"
+  ],
+
+  "tune_set": "all baseline trades with date < 2026-01-01",
+  "holdout_set": "all baseline trades with date >= 2026-01-01",
+  "holdout_rule": "The holdout set is examined exactly ONCE, after a single winning combination has been selected on the tune set. No re-selection after seeing holdout results is permitted. If the holdout contradicts the tune-set result, that contradiction is the finding and must be reported as such.",
+
+  "reporting_units": {
+    "primary": "points",
+    "secondary": "rupees using per-contract NewBrdLotQty (not a flat lot size)"
+  },
+
+  "volume_filter": {
+    "min_contracts_per_leg": 1000,
+    "note": "Unchanged from the pre-registered baseline (config/strategy.json). Applied identically across all 9 grid combinations."
+  }
+}
