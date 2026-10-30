@@ -26,6 +26,34 @@ See [RESULTS.md](RESULTS.md) for the full write-up of findings, and
 folder for the follow-up experiments and the pre-registration notes
 that back them.
 
+## Headline results (corrected baseline, 137 trades)
+
+Every NIFTY weekly expiry day from 4 January 2024 to 11 August 2026,
+using real, traded option prices. Figures are in **points** (not
+rupees) because NIFTY's lot size changed four times over this period —
+points is the unit that stays comparable across the whole sample; see
+[RESULTS_EXTENSIONS.md](RESULTS_EXTENSIONS.md) for the lot-size audit
+behind this correction.
+
+| | |
+|---|---|
+| Trades | 137 |
+| Win rate | 81.02% |
+| Total P&L | +2,672.20 pts |
+| Worst single trade | -249.20 pts (2025-04-17, ≈ -Rs 18,690) |
+| Max drawdown | 303.50 pts |
+
+**Was it just luck?** The single largest one-day NIFTY move in the
+whole period — the 2024-06-04 election-result crash — happened to not
+fall on an expiry day, so the strategy was never exposed to it.
+Simulated against that day's real option prices, the loss would have
+been about **-777 pts, over 3x worse** than any loss that actually
+occurred. See "Was the good result just luck?" in `RESULTS.md` for the
+full discussion.
+
+![Equity curve](outputs/equity_curve.png)
+![P&L distribution](outputs/pnl_distribution.png)
+
 ## How it works
 
 1. `src/download_bhavcopy.py` downloads NSE's daily options "bhavcopy"
