@@ -1,15 +1,19 @@
 """
 Read-only reconciliation of a real broker Tax P&L statement (NIFTY + SENSEX
-weekly options) against the verified charge rates in
-config/weekly_strangle/charge_rates.csv.
+weekly options, FY2026-27) against config/weekly_strangle/charge_rates.csv.
 
-Privacy: the statement holds a real client's name and code in its header
-area. This script never prints any cell outside the trade table and the
-charge lines, and never writes anything to disk.
+Layout handled (as found in the real file): one sheet, a header row with
+'Scrip Symbol', Opening/Buy/Sell Qty-Avg-Amount columns, 'Profit and Loss',
+'Net Qty'; charge rows below the legs labelled like '*CGST*' with the signed
+amount in the 'Profit and Loss' column.
+
+Privacy: the statement holds a real client's name and code (header area and
+a 'Client Code' column). This script never prints the header area or that
+column, and writes nothing to disk.
 
 Usage:
   .venv/bin/python scripts/weekly_strangle/reconcile_real_statement.py \
-      [--file data/private/real_pnl_fy2026-27.xlsx] [--sensex-lot N] [--sensex-freeze N]
+      [--file data/private/real_pnl_fy2026-27.xlsx] [--sensex-lot 20] [--nifty-freeze 1800]
 """
 
 import argparse
@@ -24,233 +28,211 @@ REPO = Path(__file__).resolve().parents[2]
 DEFAULT_FILE = REPO / "data" / "private" / "real_pnl_fy2026-27.xlsx"
 RATES_FILE = REPO / "config" / "weekly_strangle" / "charge_rates.csv"
 NIFTY_LOT = 65  # every NIFTY weekly expiring 2026-01-06 onward (NSE/FAOP/70616)
+TICK = 0.05
 GST = 0.18
+RATE_DATE = pd.Timestamp("2026-06-01")  # every rate used is constant over Apr-Nov 2026
 
-CHARGE_LABELS = {
-    "CGST": r"^\s*CGST", "SGST": r"^\s*SGST", "STT": r"^\s*STT",
-    "TOC NSE": r"TOC\s*NSE", "TOC BSE": r"TOC\s*BSE",
-    "CLG CHGS": r"CLG", "ROUNDING": r"ROUND",
+COLS = {
+    "symbol": r"scrip\s*symbol|^symbol",
+    "open_qty": r"opening\s*qty", "open_amt": r"opening\s*amount",
+    "buy_qty": r"buy\s*qty", "buy_avg": r"buy\s*avg", "buy_amt": r"buy\s*amount",
+    "sell_qty": r"sell\s*qty", "sell_avg": r"sell\s*avg", "sell_amt": r"sell\s*amount",
+    "pnl": r"profit\s*and\s*loss|realis|realiz", "net_qty": r"net\s*qty",
 }
-COLUMN_PATTERNS = {
-    "symbol": r"symbol|scrip|instrument|contract",
-    "buy_qty": r"buy\s*qty|bought\s*qty|buy\s*quantity",
-    "buy_avg": r"buy\s*(avg|rate|price)",
-    "sell_qty": r"sell\s*qty|sold\s*qty|sell\s*quantity",
-    "sell_avg": r"sell\s*(avg|rate|price)",
-    "net_qty": r"net\s*qty|net\s*quantity|open\s*qty",
-    "pnl": r"realis|realiz|p\s*&\s*l|profit",
-    "date": r"date",
-}
+CHARGES = {"CGST": r"CGST", "SGST": r"SGST", "STT": r"\bSTT\b", "TOC NSE": r"TOC\s*NSE",
+           "TOC BSE": r"TOC\s*BSE", "CLG CHGS": r"CLG", "ROUNDING": r"ROUND"}
+EXPIRY_RE = re.compile(r"(\d{2}[A-Za-z]{3}\d{4})")
 
 
-def rate(rates, charge, exchange, when, scenario="statutory"):
+def rate(rates, charge, exchange, scenario="statutory"):
     r = rates[(rates.charge == charge) & (rates.exchange == exchange) & (rates.scenario == scenario)]
-    when = pd.Timestamp(when)
     for _, row in r.iterrows():
         lo = pd.Timestamp(row.effective_from) if pd.notna(row.effective_from) else pd.Timestamp.min
         hi = pd.Timestamp(row.effective_to) if pd.notna(row.effective_to) else pd.Timestamp.max
-        if lo <= when <= hi:
+        if lo <= RATE_DATE <= hi:
             return float(row.rate), row.status
-    raise LookupError(f"no {charge}/{exchange}/{scenario} rate for {when.date()}")
+    raise LookupError(f"no {charge}/{exchange}/{scenario} rate for {RATE_DATE.date()}")
 
 
-def find_header(raw):
+def find_table(raw):
     for i in range(min(len(raw), 60)):
-        cells = [str(c).lower() for c in raw.iloc[i].tolist()]
-        joined = " | ".join(cells)
-        if re.search(COLUMN_PATTERNS["symbol"], joined) and re.search(COLUMN_PATTERNS["net_qty"], joined):
-            return i
-    return None
+        cells = [str(c) for c in raw.iloc[i].tolist()]
+        if any(re.search(COLS["symbol"], c, re.I) for c in cells) and any(re.search(COLS["net_qty"], c, re.I) for c in cells):
+            idx = {}
+            for key, pat in COLS.items():
+                for j, c in enumerate(cells):
+                    if re.search(pat, c, re.I) and j not in idx.values():
+                        idx[key] = j
+                        break
+            return i, idx
+    return None, None
 
 
-def map_columns(header_cells):
-    mapping = {}
-    for key, pat in COLUMN_PATTERNS.items():
-        for j, cell in enumerate(header_cells):
-            if j in mapping.values():
-                continue
-            if re.search(pat, str(cell), re.I):
-                mapping[key] = j
-                break
-    return mapping
-
-
-def charge_lines(raw, start):
-    found = {}
-    for i in range(start, len(raw)):
-        row = raw.iloc[i].tolist()
-        for c, cell in enumerate(row):
-            if not isinstance(cell, str):
-                continue
-            for name, pat in CHARGE_LABELS.items():
-                if name not in found and re.search(pat, cell, re.I):
-                    nums = [v for v in row[c + 1:] if isinstance(v, (int, float)) and not pd.isna(v)]
-                    if nums:
-                        found[name] = float(nums[0])
-    return found
-
-
-def orders_for(qty, freeze):
-    if qty <= 0:
-        return 0
-    return math.ceil(qty / freeze) if freeze else 1
+def pct(a, b):
+    return f"{(a - b) / b * 100:+.2f}%" if b else "n/a"
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--file", type=Path, default=DEFAULT_FILE)
-    ap.add_argument("--sensex-lot", type=int, default=None, help="SENSEX lot size (UNVERIFIED in this project)")
-    ap.add_argument("--sensex-freeze", type=int, default=None, help="SENSEX freeze qty (UNVERIFIED); default: no split")
-    ap.add_argument("--nifty-freeze", type=int, default=1800, help="NIFTY freeze qty; 1800 except 2026-10-05..2026-11-01 (3510)")
+    ap.add_argument("--sensex-lot", type=int, default=20,
+                    help="SENSEX lot size; 20 is implied by every SENSEX qty being a multiple of 20 (no primary source)")
+    ap.add_argument("--nifty-freeze", type=int, default=1800)
     args = ap.parse_args()
 
     if not args.file.exists():
-        print(f"STATEMENT NOT FOUND: {args.file.relative_to(REPO) if args.file.is_relative_to(REPO) else args.file}")
-        print("Nothing computed. Place the file there (data/private/ is gitignored) and re-run.")
+        print(f"STATEMENT NOT FOUND: {args.file}")
+        print("Nothing computed. Place the file in data/private/ (gitignored) and re-run.")
         return 2
     try:
         import openpyxl  # noqa: F401
     except ImportError:
-        print("openpyxl is not installed in this environment; pandas needs it to read .xlsx.")
-        print("Install with: .venv/bin/pip install openpyxl   (not added to requirements.txt by this script)")
+        print("openpyxl is not installed; install with: .venv/bin/pip install openpyxl")
         return 3
 
     rates = pd.read_csv(RATES_FILE, dtype=str)
     rates["rate"] = pd.to_numeric(rates["rate"], errors="coerce")
-
-    sheets = pd.read_excel(args.file, sheet_name=None, header=None)
-    sheet_name, raw, hdr = None, None, None
-    for name, df in sheets.items():
-        h = find_header(df)
-        if h is not None:
-            sheet_name, raw, hdr = name, df, h
+    raw = None
+    for name, df in pd.read_excel(args.file, sheet_name=None, header=None).items():
+        hdr, idx = find_table(df)
+        if hdr is not None:
+            raw = df
             break
     if raw is None:
-        print("Could not find a trade table (no header row with both a symbol and a net-qty column).")
+        print("No trade table found.")
         return 4
-
-    cols = map_columns(raw.iloc[hdr].tolist())
-    missing = [k for k in ("symbol", "buy_qty", "buy_avg", "sell_qty", "sell_avg", "net_qty") if k not in cols]
-    print(f"Sheet used: {sheet_name!r}; header row index {hdr}; columns mapped: "
-          + ", ".join(f"{k}={raw.iloc[hdr, v]!r}" for k, v in cols.items()))
-    if missing:
-        print(f"Missing required columns: {missing}. Stopping.")
+    need = ["symbol", "buy_qty", "buy_amt", "sell_qty", "sell_amt", "pnl", "net_qty"]
+    if any(k not in idx for k in need):
+        print(f"Missing columns: {[k for k in need if k not in idx]}")
         return 5
+    print(f"Sheet {name!r}, header row {hdr}; mapped: " + ", ".join(f"{k}={raw.iat[hdr, v]!r}" for k, v in idx.items()))
 
     body = raw.iloc[hdr + 1:]
-    t = pd.DataFrame({k: body.iloc[:, v].values for k, v in cols.items()})
-    t = t[t["symbol"].astype(str).str.contains(r"NIFTY|SENSEX", case=False, na=False)].copy()
-    for k in ("buy_qty", "buy_avg", "sell_qty", "sell_avg", "net_qty", "pnl"):
-        if k in t:
-            t[k] = pd.to_numeric(t[k], errors="coerce").fillna(0.0)
-    n_all = len(t)
-    open_rows = t[t["net_qty"] != 0]
-    t = t[t["net_qty"] == 0].copy()
-    print(f"\nRows with NIFTY/SENSEX symbols: {n_all}; excluded open (net qty != 0): {len(open_rows)}; legs used: {len(t)}")
+    sym = body.iloc[:, idx["symbol"]].astype(str)
+    num = {k: pd.to_numeric(body.iloc[:, v], errors="coerce").fillna(0.0).values for k, v in idx.items() if k != "symbol"}
+    df = pd.DataFrame(num, index=body.index)
+    df["symbol"] = sym.values
 
-    t["exch"] = t["symbol"].str.upper().str.contains("SENSEX").map({True: "BSE", False: "NSE"})
-    t["sell_prem"] = t["sell_qty"] * t["sell_avg"]
-    t["buy_prem"] = t["buy_qty"] * t["buy_avg"]
-    gross = (t["pnl"].sum() if "pnl" in t else (t["sell_prem"] - t["buy_prem"]).sum())
-    gross_calc = (t["sell_prem"] - t["buy_prem"]).sum()
+    listed = {}
+    for i, s in df.symbol.items():
+        for name_, pat in CHARGES.items():
+            if name_ not in listed and re.search(pat, s, re.I):
+                listed[name_] = -float(df.at[i, "pnl"])  # charges are negative in the P&L column
+    legs = df[df.symbol.str.contains(r"\b(?:NIFTY|SENSEX)\b", case=False)].copy()
+    legs["exch"] = legs.symbol.str.upper().str.contains("SENSEX").map({True: "BSE", False: "NSE"})
+    legs["lot"] = legs.exch.map({"NSE": NIFTY_LOT, "BSE": args.sensex_lot})
+    legs["expiry"] = legs.symbol.str.extract(EXPIRY_RE, expand=False)
+    open_legs = legs[legs.net_qty != 0]
+    closed = legs[legs.net_qty == 0]
 
-    print("\n=== Trades ===")
+    print("\n=== Legs ===")
+    print(f"rows with NIFTY/SENSEX symbols: {len(legs)}; still open (net qty != 0): {len(open_legs)} "
+          f"[{', '.join(open_legs.symbol)}]; closed legs used for P&L: {len(closed)}")
+    carried = closed[closed.open_qty != 0]
+    print(f"closed legs whose sale was in the previous FY (opening position): {len(carried)}")
+
+    traded = legs  # charges are levied on every trade in the period, including sales of still-open legs
+    sells = traded[traded.sell_qty > 0]
+    buys = traded[traded.buy_amt > 0]  # Buy Avg 0 = expired worthless at expiry: not a trade
     for ex in ("NSE", "BSE"):
-        s = t[t.exch == ex]
-        print(f"{ex}: legs {len(s)}, units sold {s.sell_qty.sum():,.0f}, units bought {s.buy_qty.sum():,.0f}, "
-              f"sell premium Rs {s.sell_prem.sum():,.2f}, buy premium Rs {s.buy_prem.sum():,.2f}")
-    print(f"TOTAL: legs {len(t)}, units sold {t.sell_qty.sum():,.0f}, sell premium Rs {t.sell_prem.sum():,.2f}, "
-          f"buy premium Rs {t.buy_prem.sum():,.2f}")
-    print(f"Gross P&L (statement column): Rs {gross:,.2f}; gross recomputed sell-buy: Rs {gross_calc:,.2f}")
-    print(f"Legs held to expiry with no buy-back (Buy Avg = 0): {(t.buy_avg == 0).sum()}")
+        s, b, c = sells[sells.exch == ex], buys[buys.exch == ex], closed[closed.exch == ex]
+        print(f"{ex}: closed legs {len(c)}; sell trades {len(s)} ({s.sell_qty.sum():,.0f} units, Rs {s.sell_amt.sum():,.2f}); "
+              f"buy-back trades {len(b)} ({b.buy_qty.sum():,.0f} units, Rs {b.buy_amt.sum():,.2f})")
+    print(f"closed legs: units sold {closed.sell_qty.sum() - closed.open_qty.clip(upper=0).sum():,.0f} "
+          f"(incl. {-closed.open_qty.clip(upper=0).sum():,.0f} sold last FY); sell premium in period Rs {closed.sell_amt.sum():,.2f} "
+          f"+ carried-in premium Rs {-closed.open_amt.clip(upper=0).sum():,.2f}")
+    print(f"closed legs held to expiry (no buy-back): {(closed.buy_amt == 0).sum()}; bought back: {(closed.buy_amt > 0).sum()}")
+    gross = closed.pnl.sum()
+    gross_re = closed.sell_amt.sum() - closed.open_amt.sum() - closed.buy_amt.sum()
+    print(f"Gross P&L, statement column (closed legs): Rs {gross:,.2f}; recomputed from amount columns: Rs {gross_re:,.2f}")
 
-    def freeze(ex):
-        return args.nifty_freeze if ex == "NSE" else args.sensex_freeze
-    t["orders"] = [orders_for(r.sell_qty, freeze(r.exch)) + (orders_for(r.buy_qty, freeze(r.exch)) if r.buy_avg > 0 else 0)
-                   for r in t.itertuples()]
-    t["orders_nosplit"] = 1 + (t.buy_avg > 0).astype(int)
-    n_orders = int(t.orders.sum())
-    print(f"\n=== Orders implied ===\nwithout freeze split: {int(t.orders_nosplit.sum())}; with freeze split "
-          f"(NIFTY {args.nifty_freeze}, SENSEX {args.sensex_freeze or 'no split - UNVERIFIED'}): {n_orders}")
+    sells_avg = sells.sell_amt / sells.sell_qty
+    adj = (sells_avg / TICK - 1e-9).apply(math.ceil) * TICK - sells_avg
+    badj = buys.buy_amt / buys.buy_qty - ((buys.buy_amt / buys.buy_qty) / TICK + 1e-9).apply(math.floor) * TICK
+    emb = (adj * sells.sell_qty).sum() + (badj * buys.buy_qty).sum()
+    print("\n=== Price adjustment embedded in average prices (vs Rs 0.05 tick) ===")
+    for ex in ("NSE", "BSE"):
+        a = adj[sells.exch == ex].round(4)
+        print(f"{ex} sells: per-unit adjustment mode {a.mode().iat[0] if len(a) else 'n/a'} "
+              f"(min {a.min() if len(a) else 'n/a'}, max {a.max() if len(a) else 'n/a'})")
+    print(f"buy-backs per-unit adjustment: {list(badj.round(4))}")
+    print(f"total embedded adjustment (sells below tick + buys above tick): Rs {emb:,.2f} "
+          f"(already inside the P&L column); gross at tick prices ~ Rs {gross + emb:,.2f}")
 
-    listed = charge_lines(raw, hdr + 1)
-    print("\n=== Listed charge lines ===")
-    for k in CHARGE_LABELS:
-        print(f"{k:9s}: {f'Rs {listed[k]:,.2f}' if k in listed else 'not found'}")
+    def n_orders(qty, ex):
+        f = args.nifty_freeze if ex == "NSE" else None
+        return math.ceil(qty / f) if f else 1
+    orders = sum(n_orders(q, e) for q, e in zip(sells.sell_qty, sells.exch)) + \
+        sum(n_orders(q, e) for q, e in zip(buys.buy_qty, buys.exch))
+    lots = ((sells.sell_qty / sells.lot).sum() + (buys.buy_qty / buys.lot).sum())
+    print("\n=== Orders and lots traded in the period ===")
+    print(f"sell orders {len(sells)} + buy-back orders {len(buys)} = {len(sells) + len(buys)} without freeze split; "
+          f"with NIFTY freeze {args.nifty_freeze}: {orders} (largest single NIFTY qty {traded.sell_qty.max():,.0f})")
+    print(f"lots traded: {lots:,.0f} (NIFTY lot {NIFTY_LOT}, SENSEX lot {args.sensex_lot} [implied, UNVERIFIED])")
 
-    when = pd.Timestamp("2026-06-01")  # every rate used is constant over Apr-Nov 2026
-    stt_r, stt_s = rate(rates, "stt_option_sale", "ALL", when)
-    nse_r, nse_s = rate(rates, "exchange_txn_charge", "NSE", when)
-    ipft_r, _ = rate(rates, "ipft", "NSE", when)
-    bse_r, bse_s = rate(rates, "exchange_txn_charge", "BSE", when)
-    sebi_r, sebi_s = rate(rates, "sebi_turnover_fee", "ALL", when)
-    stamp_r, stamp_s = rate(rates, "stamp_duty", "ALL", when)
-    nse_turn = (t[t.exch == "NSE"].sell_prem + t[t.exch == "NSE"].buy_prem).sum()
-    bse_turn = (t[t.exch == "BSE"].sell_prem + t[t.exch == "BSE"].buy_prem).sum()
+    stt_r, stt_s = rate(rates, "stt_option_sale", "ALL")
+    nse_r, nse_s = rate(rates, "exchange_txn_charge", "NSE")
+    ipft_r, _ = rate(rates, "ipft", "NSE")
+    bse_r, bse_s = rate(rates, "exchange_txn_charge", "BSE")
+    sebi_r, sebi_s = rate(rates, "sebi_turnover_fee", "ALL")
+    stamp_r, stamp_s = rate(rates, "stamp_duty", "ALL")
+    nse_turn = sells[sells.exch == "NSE"].sell_amt.sum() + buys[buys.exch == "NSE"].buy_amt.sum()
+    bse_turn = sells[sells.exch == "BSE"].sell_amt.sum() + buys[buys.exch == "BSE"].buy_amt.sum()
     turn = nse_turn + bse_turn
+    stt_leg = sells.sell_amt * stt_r / 100
 
-    pred = {
-        "STT (exact)": stt_r / 100 * t.sell_prem.sum(),
-        "TOC NSE": nse_r / 100 * nse_turn,
-        "TOC NSE + IPFT": (nse_r + ipft_r) / 100 * nse_turn,
-        "TOC BSE": bse_r / 100 * bse_turn,
-        "SEBI fee (not a listed line)": sebi_r / 100 * turn,
-        "Stamp duty (not a listed line)": stamp_r / 100 * t.buy_prem.sum(),
-    }
-    date_col = "date" in t and t["date"].notna().any()
-    if date_col:
-        t["day"] = pd.to_datetime(t["date"], errors="coerce").dt.date
-        per_day = t.groupby("day").sell_prem.sum() * stt_r / 100
-        pred["STT (ceil per trading day)"] = float(per_day.apply(math.ceil).sum())
-    print(f"\n=== Listed vs predicted (rates as of {when.date()}) ===")
-    print(f"rates: STT {stt_r}% [{stt_s}], NSE txn {nse_r}% [{nse_s}], IPFT {ipft_r}%, BSE txn {bse_r}% [{bse_s}], "
+    print("\n=== Listed charges vs Step-1 rates ===")
+    print(f"rates used: STT {stt_r}% [{stt_s}], NSE txn {nse_r}% [{nse_s}] (+IPFT {ipft_r}%), BSE txn {bse_r}% [{bse_s}], "
           f"SEBI {sebi_r}% [{sebi_s}], stamp {stamp_r}% [{stamp_s}]")
-    for k, v in pred.items():
-        base = k.split(" (")[0].replace(" + IPFT", "")
-        lv = listed.get(base)
-        diff = f"listed Rs {lv:,.2f}, diff Rs {lv - v:,.2f} ({(lv - v) / v * 100:+.2f}%)" if lv is not None and v else ""
-        print(f"{k:32s}: predicted Rs {v:,.2f}  {diff}")
-    if not date_col:
-        print("STT rounded per trading day: NOT TESTABLE - statement has no trade-date column")
-    if "CLG CHGS" in listed and turn:
-        print(f"CLG CHGS implied rate: {listed['CLG CHGS'] / turn * 100:.6f}% of total premium turnover")
+    print(f"premium turnover: NSE Rs {nse_turn:,.2f}, BSE Rs {bse_turn:,.2f}, total Rs {turn:,.2f}")
+    for k in CHARGES:
+        print(f"  listed {k:9s}: Rs {listed[k]:,.2f}" if k in listed else f"  listed {k:9s}: not found")
+    tests = [
+        ("STT exact (rate x sell premium)", "STT", stt_leg.sum()),
+        ("STT ceil to Rs 1 per leg", "STT", float(stt_leg.apply(math.ceil).sum())),
+        ("STT ceil per expiry (proxy for trade day)", "STT",
+         float(sells.assign(v=stt_leg).groupby("expiry").v.sum().apply(math.ceil).sum())),
+        ("TOC NSE (txn + IPFT)", "TOC NSE", (nse_r + ipft_r) / 100 * nse_turn),
+        ("TOC BSE", "TOC BSE", bse_r / 100 * bse_turn),
+    ]
+    for label, key, pred in tests:
+        lv = listed.get(key)
+        print(f"  {label:42s}: predicted Rs {pred:,.2f} | listed Rs {lv:,.2f} | diff Rs {lv - pred:,.2f} ({pct(lv, pred)})")
+    print("  STT ceil per actual trading day: NOT TESTABLE (no trade-date column)")
+    for k, t_ in (("TOC NSE", nse_turn), ("TOC BSE", bse_turn), ("CLG CHGS", turn)):
+        if k in listed and t_:
+            print(f"  implied {k} rate: {listed[k] / t_ * 100:.5f}% of premium turnover")
+    sebi = sebi_r / 100 * turn
+    stamp = stamp_r / 100 * buys.buy_amt.sum()
+    print(f"  SEBI fee (no listed line): predicted Rs {sebi:,.2f}; stamp duty (no listed line): predicted Rs {stamp:,.2f}")
 
-    print("\n=== GST base and unlisted brokerage ===")
-    if "CGST" in listed and "SGST" in listed:
-        gst_paid = listed["CGST"] + listed["SGST"]
-        base = gst_paid / GST
-        gstable_listed = sum(listed.get(k, 0.0) for k in ("TOC NSE", "TOC BSE", "CLG CHGS"))
-        brok = base - gstable_listed
-        brok_ex_sebi = brok - pred["SEBI fee (not a listed line)"]
-        print(f"CGST+SGST Rs {gst_paid:,.2f} -> GST base Rs {base:,.2f}; GST-able listed charges Rs {gstable_listed:,.2f}")
-        print(f"Unlisted brokerage (base - listed GST-able): Rs {brok:,.2f}; "
-              f"if SEBI fee is also inside the base: Rs {brok_ex_sebi:,.2f}")
-        lots = sum((r.sell_qty + r.buy_qty) / (NIFTY_LOT if r.exch == "NSE" else (args.sensex_lot or float("nan")))
-                   for r in t.itertuples())
-        fits = {
-            "Rs X per order (freeze split)": brok / n_orders if n_orders else float("nan"),
-            "Rs X per order (no split)": brok / t.orders_nosplit.sum(),
-            "Rs X per lot traded": brok / lots if lots == lots else float("nan"),
-            "X % of premium turnover": brok / turn * 100 if turn else float("nan"),
-        }
-        print("Fits (one aggregate total -> each one-parameter scheme fits it exactly, error = 0 by construction;"
-              " the totals alone cannot tell the schemes apart):")
-        for k, v in fits.items():
-            print(f"  {k:32s}: X = {v:,.4f}")
-        if args.sensex_lot is None and (t.exch == "BSE").any():
-            print("  per-lot fit needs --sensex-lot (SENSEX lot size is UNVERIFIED in this project)")
-        print(f"  discount benchmark Rs 20/order would be Rs {20 * n_orders:,.2f} on {n_orders} orders")
+    print("\n=== GST base -> unlisted brokerage ===")
+    gst_paid = listed.get("CGST", 0) + listed.get("SGST", 0)
+    base = gst_paid / GST
+    gst_listed = sum(listed.get(k, 0.0) for k in ("TOC NSE", "TOC BSE", "CLG CHGS"))
+    brok = base - gst_listed
+    print(f"CGST + SGST Rs {gst_paid:,.2f} -> GST base Rs {base:,.2f}; GST-able listed lines Rs {gst_listed:,.2f}")
+    print(f"unlisted brokerage = Rs {brok:,.2f} (Rs {brok - sebi:,.2f} if the SEBI fee is also in the base)")
+    print("one aggregate total -> each scheme fits it exactly; error shown is at the nearest ROUND value of X:")
+    schemes = [("Rs X per order", len(sells) + len(buys), 10), ("Rs X per lot traded", lots, 1),
+               ("X % of premium turnover", turn / 100, 0.5)]
+    for label, units, step in schemes:
+        x = brok / units
+        xr = round(x / step) * step
+        gst_pred = GST * (xr * units + gst_listed)
+        print(f"  {label:26s}: fitted X = {x:,.4f}; nearest round X = {xr:g} -> predicted GST Rs {gst_pred:,.2f} "
+              f"vs listed Rs {gst_paid:,.2f} (error Rs {gst_pred - gst_paid:+,.2f}, {pct(gst_pred, gst_paid)})")
+    print(f"  discount scenario Rs 20/order x {orders} orders = Rs {20 * orders:,.2f}")
 
-        listed_total = sum(listed.values())
-        net_a = gross - listed_total
-        print("\n=== Net P&L ===")
-        print(f"Sum of all listed charge lines: Rs {listed_total:,.2f}")
-        print(f"(a) gross - listed charges:                         Rs {net_a:,.2f}")
-        print(f"(b) (a) - implied brokerage Rs {brok:,.2f}:          Rs {net_a - brok:,.2f}")
-        print(f"    note: GST on that brokerage (Rs {GST * brok:,.2f}) is already inside the listed CGST+SGST; "
-              "adding it again would double-count")
-    else:
-        print("CGST/SGST lines not found - GST-based brokerage inference not possible")
+    print("\n=== Net P&L (closed legs) ===")
+    # listed values are charges as positives; ROUNDING is positive in the P&L column, so it enters here negative (a credit)
+    charges_total = sum(listed.get(k, 0.0) for k in CHARGES)
+    net_a = gross - charges_total
+    print(f"sum of listed charge lines (ROUNDING Rs {-listed.get('ROUNDING', 0):,.2f} counted as a credit): Rs {charges_total:,.2f}")
+    print(f"(a) gross Rs {gross:,.2f} - listed charges            = Rs {net_a:,.2f}")
+    print(f"(b) (a) - implied brokerage Rs {brok:,.2f}         = Rs {net_a - brok:,.2f}")
+    print(f"    GST on that brokerage (Rs {GST * brok:,.2f}) is already inside the listed CGST + SGST; not added again")
+    print(f"    implied brokerage = {brok / gross * 100:.1f}% of gross P&L, {brok / turn * 100:.1f}% of premium turnover")
     return 0
 
 

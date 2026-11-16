@@ -30,8 +30,10 @@ How the sources were read:
 - `data/private/` was appended to `.gitignore`. That is the only change to an existing file.
 - `git check-ignore -v data/private/real_pnl_fy2026-27.xlsx` returns `.gitignore:24:data/private/`, so
   the file is ignored.
-- **The statement file was not on disk on 2026-11-16.** It is absent from `data/private/` (which did not
-  exist) and from the home directory searched to depth 4. Section 3 therefore has **no real numbers yet**.
+- The statement was copied into `data/private/` later on 2026-11-16, and git shows it as ignored (`!!`).
+  It is not in any commit.
+- The client name and client code were never printed or written to any doc. The script skips the header
+  area and the "Client Code" column.
 
 ## 1. Charges (2024-01-01 → 2026-11-16)
 
@@ -123,7 +125,8 @@ How the sources were read:
 ### Brokerage (not regulated; modelling scenarios only)
 
 - **discount**: ₹20 per executed order.
-- **implied_real**: not computed, because the statement was not available (Section 3).
+- **implied_real**: **₹30 per lot traded**, implied from the real statement (Section 3). It reproduces the
+  listed GST to within ₹0.29. Status SECONDARY: it is inferred, not taken from a broker tariff document.
 
 ## 2. Market rules
 
@@ -214,50 +217,99 @@ How the sources were read:
 
 ## 3. Real-statement reconciliation
 
-- **Not run.** `data/private/real_pnl_fy2026-27.xlsx` did not exist on 2026-11-16, so no figure from the
-  statement can be reported. No numbers have been estimated or filled in.
-- The script `scripts/weekly_strangle/reconcile_real_statement.py` is ready:
-  - Without the file it exits with code 2 ("STATEMENT NOT FOUND").
-  - It also needs `openpyxl`, which is **not installed** in `.venv`. It was not installed and not added
-    to `requirements.txt`, because existing files were not to be modified.
-- What the script does once the file and `openpyxl` are present:
-  - **Finds the trade table**: locates the header row (symbol + net qty) and maps columns by name. It
-    never prints the header area, so the client name and code are never output.
-  - **Filters legs**: keeps NIFTY/SENSEX legs and excludes rows with non-zero Net Qty.
-  - **Trade totals**: prints legs, units sold/bought, sell/buy premium and gross P&L (from the statement
-    column and recomputed).
-  - **Order count**: 1 sell order per leg plus 1 buy order where Buy Avg > 0. Shown with and without
-    freeze-limit splitting (NIFTY 1,800 by default, `--nifty-freeze` to change; SENSEX via
-    `--sensex-freeze`, UNVERIFIED).
-  - **Charge lines**: reads CGST, SGST, STT, TOC NSE, TOC BSE, CLG CHGS and ROUNDING, and compares each
-    with the rate predicted from `charge_rates.csv` for Apr–Nov 2026.
-  - **STT, two methods**: exact (0.15% × sell premium), and rounded up to the next rupee per trading day
-    (only if a date column exists).
-  - **Implied brokerage**: GST base = (CGST + SGST) / 0.18. Unlisted brokerage = base − (TOC NSE +
-    TOC BSE + CLG CHGS). A second figure also subtracts the predicted SEBI fee.
-  - **Brokerage fits**: ₹X per order, ₹X per lot (needs `--sensex-lot`) and X% of premium.
-    - With only one aggregate total, each one-parameter scheme fits exactly (error = 0), so **the totals
-      cannot tell the schemes apart**. The script says so rather than inventing an error.
-    - Telling them apart needs per-day or per-leg charges.
-  - **Net P&L**:
-    - (a) gross − all listed charge lines.
-    - (b) (a) − implied brokerage.
-    - GST on that brokerage is already inside the listed CGST + SGST, so it is not added again.
-- Check run on a **synthetic** statement (made-up numbers, scratchpad only, not committed): every section
-  ran, and a fake client name in the header appeared **0 times** in the output.
+Source and method:
+- **Statement**: `data/private/real_pnl_fy2026-27.xlsx` (gitignored). Tax P&L for FY2026-27, one sheet
+  "Future and Option", NIFTY and SENSEX weekly options, expiries from 30 Mar 2026 to 17 Nov 2026.
+- **Script**: `scripts/weekly_strangle/reconcile_real_statement.py`, run on 2026-11-16. `openpyxl` was
+  installed into `.venv` only; it was not added to `requirements.txt`.
+- All figures below are printed by the script. Rates come from `charge_rates.csv`. Every rate used is
+  constant over Apr–Nov 2026.
 
-Reconciliation table, to be filled from the script output once the file is available:
+### Layout facts found in the file (they change how it must be read)
+
+- **Charge lines**: labelled `*CGST*`, `*SGST*`, `*STT*`, `*TOC NSE EXCHANGE*`, `*TOC BSE EXCHANGE*`,
+  `*CLG CHGS*` and `*ROUNDING*`, each with its signed amount in the "Profit and Loss" column.
+  - The first script version missed them (asterisks, wrong column) and was corrected.
+- **Average prices are rounded**, so premium must come from the Amount columns. For example,
+  585 × 0.54 = 315.90, but the Sell Amount is 315.02.
+- **Expiry rows**: legs held to expiry show a "buy" at ₹0. These are not trades and attract no charges.
+- **Opening position**: 1 closed leg (NIFTY 30Mar2026 25800 CE) was sold in the previous FY. Its ₹552.50
+  premium sits in "Opening Amount", and its P&L is in this statement.
+- **Open legs**: **two rows** have non-zero Net Qty, not one. They are both legs of the 17 Nov 2026
+  strangle (27900 CE −390, 22000 PE −715), which the statement counts as "1 open position".
+  - Both are excluded from P&L.
+  - Their *sales* happened in the period, so they are **included** when checking charges, because STT and
+    exchange charges were levied on them.
+- **Embedded price adjustment**: every NIFTY trade price sits **₹0.0115 per unit off the ₹0.05 tick**
+  (sells lower, buy-backs higher). SENSEX prices have no such adjustment.
+  - Total ₹443.68. It is already inside the statement's P&L column.
+  - What it is remains unknown (UNVERIFIED).
+
+### Reconciliation table
 
 | Item | Statement | Predicted from Step 1 rates | Difference |
 |---|---|---|---|
-| Legs / units sold / sell premium / gross P&L | not available | — | — |
-| Executed orders (no split / freeze split) | not available | — | — |
-| STT (exact; per-day ceil) | not available | 0.15% × sell premium | — |
-| TOC NSE | not available | 0.0355299% × NSE premium turnover | — |
-| TOC BSE | not available | 0.0325% × BSE premium turnover (SECONDARY) | — |
-| CLG CHGS | not available | no verified rate | — |
-| CGST + SGST → unlisted brokerage | not available | — | — |
-| Net P&L (a) / (b) | not available | — | — |
+| Closed legs (NSE / BSE) | 64 (57 / 7) | — | — |
+| Units sold, closed legs | 37,630 (incl. 650 sold last FY) | — | — |
+| Sell premium in period, closed legs | ₹27,058.20 (+ ₹552.50 carried in) | — | — |
+| Gross P&L, closed legs (statement column) | **₹24,917.54** | recomputed from amounts: ₹24,917.52 | ₹0.02 |
+| Held to expiry / bought back | 61 / 3 | — | — |
+| Trades in period (incl. open legs' sales) | 65 sells + 3 buy-backs | — | — |
+| Executed orders | **68** (no leg above the 1,800 freeze; largest 1,105 units) | 68 with freeze split | 0 |
+| Lots traded | **653** (NIFTY lot 65; SENSEX lot 20, implied) | — | — |
+| Premium turnover (sells + buy-backs) | NSE ₹29,645.93; BSE ₹1,370.00 | — | — |
+| STT | ₹73.00 | exact 0.15%: ₹42.48 | +₹30.52 (+71.8%) |
+| | | rounded up per leg: ₹78.00 | −₹5.00 |
+| | | rounded up per expiry: ₹60.00 | +₹13.00 |
+| | | rounded up per trading day: **not testable** (no trade dates) | — |
+| TOC NSE | ₹16.32 | 0.0355299% (+ IPFT): ₹10.53 | +₹5.79 (+54.9%); implied rate 0.05505% |
+| TOC BSE | ₹0.98 | 0.0325%: ₹0.45 | +₹0.53 (+120%); implied rate 0.07153% |
+| CLG CHGS | ₹1.45 | no verified rate | implied 0.00468% of premium turnover |
+| SEBI fee | no line | ₹0.03 | — |
+| Stamp duty | no line | ₹0.08 | — |
+| ROUNDING | ₹3.57 credit | — | — |
+| CGST + SGST | ₹3,529.28 → GST base ₹19,607.11 | — | — |
+| GST-able listed lines (TOC NSE + TOC BSE + CLG) | ₹18.75 | — | — |
+| **Unlisted brokerage implied** | **₹19,588.36** (₹19,588.33 if the SEBI fee is in the base) | — | — |
+
+### Which brokerage scheme fits?
+
+With one aggregate total, any one-parameter scheme fits exactly. So the error below is measured at the
+nearest *round* value of X:
+
+| Scheme | Fitted X | Nearest round X | Predicted GST | Error vs ₹3,529.28 |
+|---|---|---|---|---|
+| ₹X per order (68) | 288.0641 | 290 | ₹3,552.97 | +₹23.69 (+0.67%) |
+| **₹X per lot traded (653)** | **29.9975** | **30** | ₹3,529.57 | **+₹0.29 (+0.01%)** |
+| X% of premium turnover | 63.1558% | 63% | ₹3,520.58 | −₹8.70 (−0.25%) |
+
+- **₹30 per lot traded fits almost exactly.**
+- 63% of premium is not a plausible brokerage scheme.
+- For comparison, the discount scenario (₹20 × 68 orders) would cost ₹1,360.00.
+
+### Net P&L (closed legs)
+
+| | Amount |
+|---|---|
+| Gross P&L (statement column) | ₹24,917.54 |
+| Listed charge lines, net of the ₹3.57 rounding credit | ₹3,617.46 |
+| **(a) Gross − listed charges** | **₹21,300.08** |
+| Implied brokerage | ₹19,588.36 |
+| **(b) (a) − implied brokerage** | **₹1,711.72** |
+
+- In (b), the GST on the brokerage (₹3,525.91) is already inside the listed CGST + SGST, so it is not
+  added again.
+- Implied brokerage equals **78.6% of gross P&L** and **63.2% of premium turnover**.
+
+### What the reconciliation shows
+
+- The listed charge lines alone understate costs badly. The CGST + SGST lines imply about ₹19.6k of
+  brokerage that never appears as its own line.
+- On deep-OTM premiums that average under ₹1, a per-lot brokerage of ₹30 is the dominant cost.
+- Compared with the statutory rates:
+  - TOC lines are 55% (NSE) and 120% (BSE) higher than the true-to-label rates predict.
+  - STT is higher than the exact rate. It is consistent with rounding up once per contract note, but
+    that cannot be proven without trade dates.
 
 ## What this changes for the cost model (for the next step)
 
@@ -271,6 +323,12 @@ Reconciliation table, to be filled from the script output once the file is avail
 - A buy-back exit adds the same exchange, SEBI and brokerage charges, stamp duty of 0.003%, and further
   order slices.
 - Margin for deep-OTM short puts beyond 10% OTM carries 3% ELM, not 2%, plus 2% more on expiry day.
+- **Brokerage must be modelled per lot as well as per order.** At the real broker (₹30 per lot), it took
+  78.6% of gross P&L. At a discount broker (₹20 per order), the same trades would have cost ₹1,360.
+- Statement-level effects to carry into the model:
+  - STT rounding (listed is about 72% above exact).
+  - TOC above the statutory rate.
+  - A ₹0.0115 per unit adjustment inside the price on NIFTY trades.
 
 ## STILL UNVERIFIED (or only secondary)
 
@@ -291,5 +349,9 @@ Reconciliation table, to be filled from the script output once the file is avail
 - Final settlement price of NIFTY options as the index closing value. Not checked against contract specs.
 - Effective date of NSE's 3% ELM for short index options more than 10% OTM.
 - How far back NSE's historical SPAN risk-parameter files go.
-- **The entire real-statement reconciliation**, including the implied_real brokerage scenario. The
-  statement file was not present.
+- The broker's actual brokerage tariff. ₹30 per lot is inferred from GST and has not been confirmed
+  against a tariff sheet or contract notes.
+- What the ₹0.0115 per unit price adjustment on NIFTY trades is.
+- Why listed TOC NSE (0.05505%) and TOC BSE (0.07153%) exceed the true-to-label exchange rates.
+- How STT is rounded. ₹73 lies between rounding up per expiry (₹60) and per leg (₹78); per trading day
+  needs contract notes with dates.
