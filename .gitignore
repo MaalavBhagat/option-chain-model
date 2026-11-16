@@ -21,3 +21,4 @@ data/raw/*.zip
 # does not. Regenerate with src/download_bhavcopy.py and src/extract_chain.py.
 data/raw/nifty50_daily.csv
 data/processed/*.csv
+data/private/
