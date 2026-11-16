@@ -1,0 +1,15 @@
+{
+  "adopted": "2026-11-17",
+  "adopted_by": "Goggy: 'Take all recommended' (Step 6 decision list)",
+  "note": "Fills gaps the pre-registration (incl. Amendment 1) does not decide. Read by src/weekly_strangle/*.",
+  "D1_gate1": "Gate 1 checks that costs.py reproduces Step 2's 'predicted from rates' column within Rs 1 (STT exact 0.15%, TOC NSE txn+IPFT, TOC BSE). The gap to the statement's listed lines is reported as a known underestimate, not fixed.",
+  "D2_pre2024_rates_file": "config/weekly_strangle/charge_rates_pre2024.csv",
+  "D3_nse_txn_scenario": "client_typical",
+  "D4_include_ipft": true,
+  "D4_include_clearing": false,
+  "D4_gst_base": ["brokerage", "exchange_txn_charge", "sebi_turnover_fee"],
+  "D5_missing_spot": "skip_and_log",
+  "D6_v4_wing": {"choose": "nearest_to_W_points", "tie": "further_out", "eligible": {"min_volume_contracts": 1, "min_close": 0.05}},
+  "D7_v2_tie": "further_otm",
+  "D8_freeze_pre_2023_04_03": "part of D2 (pre-2024 rates file)"
+}

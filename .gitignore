@@ -26,3 +26,4 @@ data/raw/india_vix_daily.csv
 data/raw/nifty50_daily_v2.csv
 data/raw/legacy/
 data/raw/india_vix_daily_yfinance.csv
+data/processed/*.parquet
