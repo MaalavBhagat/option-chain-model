@@ -1,0 +1,8 @@
+Source: NSE old-format F&O bhavcopy archive, https://archives.nseindia.com/content/historical/DERIVATIVES/<YYYY>/<MON>/fo<DDMONYYYY>bhav.csv.zip
+Built on: 2026-11-16 by scripts/weekly_strangle/legacy_bhavcopy.py build
+Filter: INSTRUMENT == OPTIDX and SYMBOL == NIFTY
+Rows: 2913404; trading days: 1234
+Date range: 2019-01-01 to 2023-12-29
+Columns: trade_date, expiry, strike, type, open, high, low, close, settle, contracts, oi, spot_close
+spot_close joined from data/raw/nifty50_daily_v2.csv (yfinance ^NSEI); no lot size column (not in source)
+Download log: data/raw/download_legacy_2019_2023_manifest.csv

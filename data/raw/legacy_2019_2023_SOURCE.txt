@@ -1,0 +1,10 @@
+Source: NSE old-format F&O bhavcopy archive
+URL pattern: https://archives.nseindia.com/content/historical/DERIVATIVES/<YYYY>/<MON>/fo<DDMONYYYY>bhav.csv.zip
+Saved to: data/raw/legacy/ (gitignored)
+Downloaded on: 2026-11-16 by scripts/weekly_strangle/legacy_bhavcopy.py download (session/headers from src/download_bhavcopy.py)
+Files: 1234 zips, 742,206,394 bytes
+Rows (all F&O instruments, summed over files): 60,879,340
+Date range: 2019-01-01 to 2023-12-29
+Weekdays requested: 1304 (2019-01-01..2023-12-31); HTTP 200: 1234; HTTP 404: 70; request failures: 0
+Only 404 on a NIFTY trading day: 2021-03-30 (retried twice, still 404) -- genuine archive gap
+Attempt log: data/raw/download_legacy_2019_2023_manifest.csv

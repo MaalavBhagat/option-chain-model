@@ -1,0 +1,7 @@
+Source: Yahoo Finance via the yfinance Python package
+Ticker: ^NSEI
+Downloaded on: 2026-11-16
+Rows: 2678
+Date range: 2016-01-04 to 2026-11-16
+Columns: Date, Adj Close, Close, High, Low, Open, Volume (same layout as nifty50_daily.csv)
+Supersedes nothing: data/raw/nifty50_daily.csv is left unchanged

@@ -1,0 +1,7 @@
+Source: NSE historical India VIX API (vixhistory), yearly requests
+URL(s): https://www.nseindia.com/api/historicalOR/vixhistory?from=01-01-2016&to=30-03-2016 ... https://www.nseindia.com/api/historicalOR/vixhistory?from=04-11-2026&to=16-11-2026
+Downloaded on: 2026-11-16
+Rows: 2692
+Date range: 2016-01-01 to 2026-11-13
+Columns: Date, Open, High, Low, Close
+Attempt log: data/raw/download_vix_manifest.csv

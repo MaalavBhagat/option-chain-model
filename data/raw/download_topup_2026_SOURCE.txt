@@ -1,0 +1,8 @@
+Source: NSE UDiFF F&O Common Bhavcopy Final archive
+URL pattern: https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_<YYYYMMDD>_F_0000.csv.zip
+Downloaded on: 2026-11-16 by scripts/weekly_strangle/topup_data.py bhav (reuses src/download_bhavcopy.py session/headers/URL/path functions)
+Files: 62 zips (61 weekdays + Sunday 2026-11-08 Muhurat session), 71,203,437 bytes
+Rows (all F&O instruments, summed over files): 2,238,878
+Date range: 20260817 to 20261113
+Weekdays with no file (HTTP 404): 2026-09-14, 2026-10-02, 2026-10-20, 2026-11-10 (NSE trading holidays per NSE 2026 holiday list); 2026-11-16 (trading day, not yet published at download time)
+Attempt log: data/raw/download_topup_2026_manifest.csv

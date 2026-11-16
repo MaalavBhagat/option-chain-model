@@ -1,0 +1,4 @@
+Source: yfinance ^INDIAVIX (comparison copy)
+Downloaded on: 2026-11-16
+Rows: 2665
+Date range: 2016-01-01 to 2026-11-16
