@@ -222,4 +222,43 @@ muhurat_excluded: [2019-10-27, 2020-11-14, 2021-11-04, 2022-10-24, 2023-11-12, 2
 
 ## Amendments
 
-(none)
+### Amendment 1 — 2026-11-17, adopted before any outcome was computed
+
+- **Decision:** Goggy adopted all four proposed fixes.
+- **Evidence and rejected alternatives:** `docs/weekly_strangle/04a_amendment_1.md`.
+- **Parameters:** `config/weekly_strangle/prereg_params_amendment_1.json` replaces
+  `prereg_params.json` for all runs. The original JSON is kept unchanged.
+- **Original wording:** everything above stays as locked in commit f41f1f4. Where it conflicts with this
+  amendment, this amendment governs.
+- **Not computed:** no P&L, payoff or outcome was needed to find these issues.
+
+**1A. FOMC date shift (amends §5 V6, line 136) [C, TECHNICAL]**
+- The shift applies **only** to FOMC rows that store the US date:
+  `config/weekly_strangle/event_calendar_2019_2023.csv` and
+  `config/weekly_strangle/event_calendar_2026_extension.csv`.
+- The 21 FOMC rows of `config/event_calendar.csv` already store the Indian date and are used **as is**.
+- "Next Indian trading day" = the first date strictly after the US date that is a trading day under §2's
+  calendar rules (it has a bhavcopy and is not a Muhurat session).
+  - Examples: Sunday 2020-03-15 → 2020-03-16; 2026-09-16 → 2026-09-17.
+
+**1B. Event-calendar provenance (amends §5 V6, lines 134–135) [C, TECHNICAL]**
+- `config/event_calendar.csv` has no status column. Its rows are treated as follows:
+  - FOMC rows (federalreserve.gov) and the one row citing rbi.org.in: VERIFIED.
+  - Every other row: SECONDARY.
+- All rows still count for V6 (`include_secondary: true`). The set of V6 dates is unchanged.
+- RBI's own Monetary Policy page confirms two dates sourced from 5paisa in that file:
+  - 2026-06-05 (Governor's Statement, prid=62864).
+  - 2026-08-05 (Governor's Statement, prid=63288).
+
+**1C. STT on exercise (replaces the conditional in §4 "Statutory charges", line 84) [C, TECHNICAL]**
+- STT on exercise is payable **only by the purchaser** (`charge_rates.csv` rows `stt_option_exercised`:
+  0.125% to 2026-03-31, 0.15% from 2026-04-01). **Short legs never pay it.**
+- A **long V4 wing** that settles in the money pays it on intrinsic value × units, at the rate in force
+  on the expiry date.
+- A wing that expires worthless pays nothing at expiry.
+
+**1D. V6 event types (amends §5 V6 and the V6 row of the §5 table) [G, STRATEGY]**
+- In both IS and OOS, V6 counts only these event types: `US Fed FOMC`, `RBI MPC`, `Union Budget` and
+  `Lok Sabha Election Result`.
+- `State Election Result` rows (5 in `config/event_calendar.csv`, 0 in the 2019–2023 file) are
+  **ignored**, so the filter is the same rule in both periods.
