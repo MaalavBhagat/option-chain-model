@@ -1,0 +1,81 @@
+date,event_type,description,source_url,status
+2019-01-30,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20190130a.htm,VERIFIED
+2019-02-01,Union Budget,Interim Union Budget 2019-20 (pre-election),https://www.indiabudget.gov.in/budget2019-20(I)/budget.asp,SECONDARY
+2019-02-07,RBI MPC,RBI MPC policy announcement (FY18-19 6th bi-monthly); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3636,VERIFIED
+2019-03-20,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20190320a.htm,VERIFIED
+2019-04-04,RBI MPC,RBI MPC policy announcement (FY19-20 1st bi-monthly); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3660,VERIFIED
+2019-05-01,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20190501a.htm,VERIFIED
+2019-05-23,Lok Sabha Election Result,2019 Lok Sabha general election: counting of votes and results (ECI/PN/58/2019),https://www.pib.gov.in/PressReleasePage.aspx?PRID=1572399,VERIFIED
+2019-06-06,RBI MPC,RBI MPC policy announcement (FY19-20 2nd bi-monthly); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3717,VERIFIED
+2019-06-19,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20190619a.htm,VERIFIED
+2019-07-05,Union Budget,Full Union Budget 2019-20 (post-election),https://www.indiabudget.gov.in/budget2019-20/index.php,SECONDARY
+2019-07-31,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20190731a.htm,VERIFIED
+2019-08-07,RBI MPC,RBI MPC policy announcement (FY19-20 3rd bi-monthly); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3751,VERIFIED
+2019-09-18,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20190918a.htm,VERIFIED
+2019-10-04,RBI MPC,RBI MPC policy announcement (FY19-20 4th bi-monthly); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3769,VERIFIED
+2019-10-30,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20191030a.htm,VERIFIED
+2019-12-05,RBI MPC,RBI MPC policy announcement (FY19-20 5th bi-monthly); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3796,VERIFIED
+2019-12-11,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20191211a.htm,VERIFIED
+2020-01-29,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20200129a.htm,VERIFIED
+2020-02-01,Union Budget,Union Budget 2020-21 (Saturday session),https://www.indiabudget.gov.in/budget2020-21/index.php,SECONDARY
+2020-02-06,RBI MPC,RBI MPC policy announcement (FY19-20 6th bi-monthly); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3828,VERIFIED
+2020-03-03,US Fed FOMC,"FOMC policy statement (unscheduled 50bp cut); US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20200303a.htm,VERIFIED
+2020-03-15,US Fed FOMC,"FOMC policy statement (unscheduled cut to 0-0.25% (Sunday)); US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20200315a.htm,VERIFIED
+2020-03-23,US Fed FOMC,"FOMC policy statement (unscheduled statement: open-ended asset purchases, no rate change); US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20200323a.htm,VERIFIED
+2020-03-27,RBI MPC,"RBI MPC policy announcement (FY19-20 7th (off-cycle, COVID)); date = last meeting day per RBI minutes/statement",https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3847,VERIFIED
+2020-04-29,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20200429a.htm,VERIFIED
+2020-05-22,RBI MPC,RBI MPC policy announcement (FY20-21 off-cycle (COVID)); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3859,VERIFIED
+2020-06-10,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20200610a.htm,VERIFIED
+2020-07-29,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20200729a.htm,VERIFIED
+2020-08-06,RBI MPC,RBI MPC policy announcement (FY20-21); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=50174,VERIFIED
+2020-09-16,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20200916a.htm,VERIFIED
+2020-10-09,RBI MPC,RBI MPC policy announcement (FY20-21); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=3912,VERIFIED
+2020-11-05,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20201105a.htm,VERIFIED
+2020-12-04,RBI MPC,RBI MPC policy announcement (FY20-21); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=50746,VERIFIED
+2020-12-16,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20201216a.htm,VERIFIED
+2021-01-27,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20210127a.htm,VERIFIED
+2021-02-01,Union Budget,Union Budget 2021-22,https://www.pib.gov.in/PressReleasePage.aspx?PRID=1693908,VERIFIED
+2021-02-05,RBI MPC,RBI MPC policy announcement (FY20-21); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=51076,VERIFIED
+2021-03-17,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20210317a.htm,VERIFIED
+2021-04-07,RBI MPC,RBI MPC policy announcement (FY21-22); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=51380,VERIFIED
+2021-04-28,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20210428a.htm,VERIFIED
+2021-06-04,RBI MPC,RBI MPC policy announcement (FY21-22); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=51682,VERIFIED
+2021-06-16,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20210616a.htm,VERIFIED
+2021-07-28,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20210728a.htm,VERIFIED
+2021-08-06,RBI MPC,RBI MPC policy announcement (FY21-22); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=52008,VERIFIED
+2021-09-22,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20210922a.htm,VERIFIED
+2021-10-08,RBI MPC,RBI MPC policy announcement (FY21-22); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=52367,VERIFIED
+2021-11-03,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20211103a.htm,VERIFIED
+2021-12-08,RBI MPC,RBI MPC policy announcement (FY21-22); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=52686,VERIFIED
+2021-12-15,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20211215a.htm,VERIFIED
+2022-01-26,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20220126a.htm,VERIFIED
+2022-02-01,Union Budget,Union Budget 2022-23,https://www.indiabudget.gov.in/budget2022-23/index.php,SECONDARY
+2022-02-10,RBI MPC,RBI MPC policy announcement (FY21-22); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=53249,VERIFIED
+2022-03-16,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20220316a.htm,VERIFIED
+2022-04-08,RBI MPC,RBI MPC policy announcement (FY22-23); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=53535,VERIFIED
+2022-05-04,RBI MPC,RBI MPC policy announcement (FY22-23 off-cycle); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=53652,VERIFIED
+2022-05-04,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20220504a.htm,VERIFIED
+2022-06-08,RBI MPC,RBI MPC policy announcement (FY22-23); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=53833,VERIFIED
+2022-06-15,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20220615a.htm,VERIFIED
+2022-07-27,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20220727a.htm,VERIFIED
+2022-08-05,RBI MPC,RBI MPC policy announcement (FY22-23); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=54150,VERIFIED
+2022-09-21,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20220921a.htm,VERIFIED
+2022-09-30,RBI MPC,RBI MPC policy announcement (FY22-23); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=54464,VERIFIED
+2022-11-02,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20221102a.htm,VERIFIED
+2022-12-07,RBI MPC,RBI MPC policy announcement (FY22-23); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=54817,VERIFIED
+2022-12-14,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20221214a.htm,VERIFIED
+2023-02-01,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20230201a.htm,VERIFIED
+2023-02-01,Union Budget,Union Budget 2023-24,https://www.pib.gov.in/PressReleasePage.aspx?PRID=1895320,VERIFIED
+2023-02-08,RBI MPC,RBI MPC policy announcement (FY22-23); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=55177,VERIFIED
+2023-03-22,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20230322a.htm,VERIFIED
+2023-04-06,RBI MPC,RBI MPC policy announcement (FY23-24); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=55471,VERIFIED
+2023-05-03,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20230503a.htm,VERIFIED
+2023-06-08,RBI MPC,RBI MPC policy announcement (FY23-24); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=55816,VERIFIED
+2023-06-14,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20230614a.htm,VERIFIED
+2023-07-26,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20230726a.htm,VERIFIED
+2023-08-10,RBI MPC,RBI MPC policy announcement (FY23-24); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=56175,VERIFIED
+2023-09-20,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20230920a.htm,VERIFIED
+2023-10-06,RBI MPC,RBI MPC policy announcement (FY23-24); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=56501,VERIFIED
+2023-11-01,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20231101a.htm,VERIFIED
+2023-12-08,RBI MPC,RBI MPC policy announcement (FY23-24); date = last meeting day per RBI minutes/statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=56887,VERIFIED
+2023-12-13,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20231213a.htm,VERIFIED
