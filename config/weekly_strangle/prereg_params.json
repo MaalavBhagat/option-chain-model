@@ -1,0 +1,27 @@
+{
+  "is_expiries": ["2019-02-14", "2023-12-28"],
+  "oos_expiries": ["2024-01-04", "2026-11-09"],
+  "entry_day": {"primary": 1, "sensitivity": [2, 4]},
+  "strike_pct_otm": {"call": 0.07, "put": 0.10, "max_closer_pp": 0.02},
+  "eligible": {"min_volume_contracts": 1, "min_close": 0.05},
+  "slippage_ticks": {"primary": 1, "sensitivity": [2, 4]},
+  "tick": 0.05,
+  "brokerage": {
+    "A": {"per": "lot_order", "rupees": 30},
+    "B": {"per": "lot_order", "rupees": 20},
+    "C": {"per": "none", "rupees": 0},
+    "D": {"per": "order", "rupees": 20, "role": "reference"}
+  },
+  "lots": [1, 10, 100],
+  "max_weekly_loss_rupees": 5000,
+  "variants": {
+    "V1": {},
+    "V2": {"abs_delta": 0.04, "accept": [0.02, 0.06], "sensitivity": [0.03, 0.05], "r": 0.0},
+    "V3": {"stop_multiple": 3, "sensitivity": [2, 5]},
+    "V4": {"wing_points": 300, "tolerance_points": 100, "sensitivity": [200, 500]},
+    "V5": {"vix_skip_above": 18, "sensitivity": [15, 20]},
+    "V6": {"fomc_shift_next_indian_day": true, "include_secondary": true}
+  },
+  "bootstrap": {"block_weeks": 4, "resamples": 10000, "seed": 20261117, "ci": 0.95},
+  "muhurat_excluded": ["2019-10-27", "2020-11-14", "2021-11-04", "2022-10-24", "2023-11-12", "2024-11-01", "2025-10-21", "2026-11-08"]
+}

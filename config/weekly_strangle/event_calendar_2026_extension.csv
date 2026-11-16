@@ -1,0 +1,4 @@
+date,event_type,description,source_url,status
+2026-09-16,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a.htm,VERIFIED
+2026-10-07,RBI MPC,RBI MPC policy announcement (FY26-27 4th bi-monthly; meeting Oct 5-7); date = last meeting day per RBI Governor's Statement,https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=63744,VERIFIED
+2026-10-28,US Fed FOMC,"FOMC policy statement; US date, released after the Indian close",https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm,VERIFIED
