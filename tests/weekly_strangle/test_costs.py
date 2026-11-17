@@ -28,9 +28,17 @@ def test_sebi_fee_relief_period(rates):
     assert costs.rate_on(rates, "sebi_turnover_fee", "ALL", "statutory", D(2021, 4, 1)) == pytest.approx(0.0001)
 
 
-def test_stamp_duty_before_july_2020_is_missing(rates):
+def test_stamp_duty_row_missing_before_july_2020_but_d10_fallback_applies(rates, params):
     with pytest.raises(costs.MissingRateError):
         costs.rate_on(rates, "stamp_duty", "ALL", "statutory", D(2020, 6, 30))
+    assert costs.stamp_duty_rate(rates, D(2020, 6, 30), params) == pytest.approx(0.003)
+    assert costs.stamp_duty_rate(rates, D(2019, 2, 13), params) == pytest.approx(0.003)
+    assert costs.stamp_duty_rate(rates, D(2020, 7, 1), params) == pytest.approx(0.003)
+
+
+def test_buy_order_before_july_2020_pays_d10_stamp(rates, params):
+    lines = costs.order_charges("buy", 2.0, 75, 1, D(2020, 3, 18), "A", rates, params)
+    assert lines["stamp_duty"] == pytest.approx(150 * 0.00003)
 
 
 def test_brokerage_codes(rates, params):
@@ -41,9 +49,22 @@ def test_brokerage_codes(rates, params):
     assert costs.brokerage("D", 100, rates, 7500, day, params) == 20 * 5  # 7,500 units / 1,800 freeze
 
 
-def test_brokerage_d_needs_freeze_limit(rates, params):
-    with pytest.raises(costs.MissingRateError):
-        costs.brokerage("D", 1, rates, 75, D(2020, 1, 2), params)
+def test_freeze_limit_before_april_2023_uses_d11(rates, params):
+    assert costs.freeze_limit(rates, D(2020, 1, 2), params) == 1800
+    assert costs.freeze_limit(rates, D(2023, 4, 2), params) == 1800
+    assert costs.brokerage("D", 100, rates, 7500, D(2020, 1, 2), params) == 20 * 5
+    assert costs.brokerage("D", 1, rates, 75, D(2020, 1, 2), params) == 20
+
+
+def test_ipft_moved_into_transaction_charge_from_march_2026(rates):
+    """NSE/FA/73061: from 2026-03-01 IPFT is Rs 0.01/crore and the txn charge Rs 3,552.99; total unchanged."""
+    before, after = D(2026, 1, 5), D(2026, 4, 6)
+    assert costs.rate_on(rates, "ipft", "NSE", "statutory", before) == pytest.approx(0.0005)
+    assert costs.rate_on(rates, "ipft", "NSE", "statutory", after) == pytest.approx(0.0000001)
+    total_before = costs.exchange_txn_rate(rates, before) + costs.rate_on(rates, "ipft", "NSE", "statutory", before)
+    total_after = costs.exchange_txn_rate(rates, after) + costs.rate_on(rates, "ipft", "NSE", "statutory", after)
+    assert total_before == pytest.approx(0.03553)
+    assert total_after == pytest.approx(0.03553)
 
 
 def test_sell_order_charge_lines(rates, params):

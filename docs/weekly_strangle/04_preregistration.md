@@ -262,3 +262,98 @@ muhurat_excluded: [2019-10-27, 2020-11-14, 2021-11-04, 2022-10-24, 2023-11-12, 2
   `Lok Sabha Election Result`.
 - `State Election Result` rows (5 in `config/event_calendar.csv`, 0 in the 2019–2023 file) are
   **ignored**, so the filter is the same rule in both periods.
+
+### Amendment 2 — 2026-11-17, adopted before any outcome was computed
+
+- **What it records:** the engine decisions D1–D12 taken in Step 6 / 6b.
+  - D1–D9 as in `config/weekly_strangle/step6_decisions.json`. D1–D8 were committed in 6281ab4; D9 in
+    69ef47d.
+  - D10–D12 are new in Step 6b.
+- **Who chose:**
+  - D1–D8: Claude Code recommended them; Goggy accepted them as a set ("Take all recommended").
+  - D9: Goggy chose "add SEBI fee"; Claude Code chose the notional basis.
+  - D10–D12: Goggy chose them (Step 6b instruction).
+- **Parameters:** `config/weekly_strangle/prereg_params_amendment_2.json` replaces
+  `prereg_params_amendment_1.json` for all runs. Both earlier JSON files are kept unchanged.
+- **Precedence:** where this amendment conflicts with the text above, this amendment governs.
+- **Not computed:** no P&L, payoff, outcome or backtest result was computed to take these decisions.
+
+**D1 — Gate 1 definition. CHANGES §8 Gate 1. [Claude Code recommended; Goggy accepted; TECHNICAL]**
+- **Question:** §8.1 asks the cost model to reproduce Step 2's listed-charge reconciliation within ₹1. But
+  §4 requires exact rates, and Step 2 showed exact rates do not match the statement's lines (STT ₹42.48 vs
+  ₹73.00).
+- **Choice:** Gate 1 checks that `costs.py` reproduces Step 2's "predicted from rates" column within ₹1 for
+  STT, TOC NSE (transaction charge + IPFT) and TOC BSE.
+  - The gap to the statement's listed lines is reported as a known underestimate, not fixed.
+  - Clearing and GST are not scored.
+
+**D2 — Charge rates before 2024. [Claude Code recommended; Goggy accepted; TECHNICAL]**
+- **Question:** `charge_rates.csv` has no STT, transaction-charge, IPFT or SEBI-fee rows before 2024-01-01.
+- **Choice:** a new file, `config/weekly_strangle/charge_rates_pre2024.csv`, from primary sources where
+  found, with a status on each row.
+  - Sources: NSE/FATAX/56235, NSE/FATAX/41919, NSE/FA/46730, NSE/FA/56129, and the SEBI Gazettes via
+    NSE/FA/40632 and NSE/FA/44514.
+
+**D3 — Which NSE transaction-charge row. [Claude Code recommended; Goggy accepted; TECHNICAL]**
+- **Question:** two rows cover 2024-01-01 to 2024-09-30: the member slab (0.050 to 0.030%) and the client
+  rate (0.0495%).
+- **Choice:** the `client_typical` row (the first incremental slab, the rate clients are typically billed)
+  where one exists for the date; otherwise the `statutory` row (true-to-label from 2024-10-01).
+
+**D4 — IPFT, clearing and the GST base. [Claude Code recommended; Goggy accepted; TECHNICAL]**
+- **Question:** §4 does not mention IPFT or clearing charges, and the GST base is not fully specified.
+- **Choice:**
+  - IPFT is charged.
+  - Clearing charges are not modelled (no rate source).
+  - GST = 18% of (brokerage + exchange transaction charge + SEBI fee), without IPFT.
+
+**D5 — Missing spot. [Claude Code recommended; Goggy accepted; TECHNICAL]**
+- **Question:** 2019-02-13 and 2019-03-29 have an option file but no spot price. §2 only covers a missing
+  option file.
+- **Choice:** skip the week and log the reason "missing spot".
+
+**D6 — V4 wing choice. [Claude Code recommended; Goggy accepted; TECHNICAL]**
+- **Question:** §5 does not say which wing to buy when several are within W ± 100 points, or whether the
+  wing must have traded.
+- **Choice:** the strike nearest to exactly W points beyond the short strike; ties go further out.
+  Eligibility is the same as for short legs (volume ≥ 1, close ≥ 0.05).
+
+**D7 — V2 tie-break. [Claude Code recommended; Goggy accepted; TECHNICAL]**
+- **Question:** §5 does not say which strike wins when two are equally close to the target |delta|.
+- **Choice:** the further-OTM strike, as in V1.
+
+**D8 — Freeze limits before 2023-04-03. [Claude Code recommended; Goggy accepted; TECHNICAL]**
+- **Question:** no freeze-limit row exists before 2023-04-03.
+- **Choice:** to be handled in the D2 file. No primary source was found, so the row stayed NOT_AVAILABLE.
+  **Superseded by D11.**
+
+**D9 — Charges at an in-the-money settlement. [Goggy chose "add SEBI fee"; Claude Code chose the notional basis; TECHNICAL]**
+- **Question:** §4 does not say whether the SEBI fee or an exchange charge applies when a leg settles in
+  the money.
+- **Choice:**
+  - A leg that settles in the money pays the SEBI turnover fee on its notional value, whether it is short
+    (assigned) or long (exercised), plus 18% GST on that fee.
+  - A long leg also pays STT on exercise (Amendment 1C).
+  - No brokerage, no slippage and no exchange transaction charge apply at settlement.
+- **Notional basis = settlement spot × units. This is a conservative assumption.**
+  - The SEBI Gazette (SEBI/L.A.D.-N.R.O./G.N./2019/03, Schedule V Part B, Explanation (B)) adds the "notional
+    value of option contracts exercised or assigned" to a stock broker's turnover. It does not define
+    notional value.
+  - There is **no primary source** that the fee is passed through to the client, or for spot × units as the
+    basis.
+
+**D10 — Stamp duty before 2020-07-01. [Goggy chose; TECHNICAL; status APPROXIMATION]**
+- **Question:** before 2020-07-01 stamp duty was set by each state, so there is no single rate.
+- **Choice:** 0.003% of buy-side premium, the national rate in force from 2020-07-01.
+  - It affects V3 buy-backs and V4 wing buys before that date.
+
+**D11 — NIFTY freeze limit before 2023-04-03. [Goggy chose; TECHNICAL; status SECONDARY]**
+- **Question:** no primary source was read for the freeze limit before 2023-04-03.
+- **Choice:** 1,800 units, for brokerage D only (the only cost that depends on the number of orders).
+  - It is chosen as the conservative value: a lower limit gives more orders and more brokerage.
+
+**D12 — NSE transaction charge, Jan–Mar 2024. [Goggy chose; TECHNICAL]**
+- **Question:** the existing `charge_rates.csv` row applies 0.0495% from 2024-01-01. A secondary source (a
+  broker bulletin) says the cut from 0.050% to 0.0495% took effect only on 2024-04-01.
+- **Choice:** keep the existing `charge_rates.csv` row. The secondary source is noted here.
+  - The impact is 0.0005% of premium on trades entered 2024-01-01 to 2024-03-31.

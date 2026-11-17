@@ -1,8 +1,8 @@
 # Weekly strangle engine (Step 6)
 
 This package holds the code for the weekly NIFTY short-strangle study. Its rules come from
-`docs/weekly_strangle/04_preregistration.md` (including Amendment 1),
-`config/weekly_strangle/prereg_params_amendment_1.json` and
+`docs/weekly_strangle/04_preregistration.md` (including Amendments 1 and 2),
+`config/weekly_strangle/prereg_params_amendment_2.json` and
 `config/weekly_strangle/step6_decisions.json`.
 **Step 6 does not run the backtest.** Only the correctness gates were run (`scripts/weekly_strangle/run_gates.py`).
 

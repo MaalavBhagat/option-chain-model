@@ -253,3 +253,37 @@ These six trades are not a sample result and say nothing about the strategy's ou
   - SEBI fee ₹15 per crore before 2019-04-01;
   - the basis of exercise STT before 2019-09-01.
 - The GST line in Gate 1 is −₹1.10 against the statement. It is not scored under D1.
+
+## Erratum (2026-11-17)
+
+- **Unit tests:** now **57/57 pass** (`pytest tests/weekly_strangle`), up from 46/46 above. Step 6b added
+  or changed the following:
+  - D9 settlement tests (one test replaced by three).
+  - D10 stamp-duty and D11 freeze-limit tests.
+  - An IPFT rate-change test.
+  - `test_no_missing_rate.py`. It builds real trades for the 2020-03-12, 2020-03-19 and 2020-03-26 expiries:
+    one per variant, then every combination of variant × entry day (T-1/T-2/T-4) × brokerage (A–D) ×
+    slippage (1/2/4), which is 648 builds.
+    - Every build ended "ok" or "skipped". None failed on a missing rate or an undecided rule.
+    - Nothing was summed or averaged.
+  - The look-ahead tests are unchanged: 5 pass. The existing `tests/test_lot_size.py` still passes (4).
+- **Stop-item 1 (in-the-money settlement):** decided as D9, and recorded with D1–D12 as Amendment 2 in
+  `04_preregistration.md`.
+  - Stop-items 2–4 are decided there as D10 (stamp duty), D11 (freeze limit) and D12 (Jan–Mar 2024
+    transaction charge).
+  - The engine now reads `config/weekly_strangle/prereg_params_amendment_2.json`.
+- **Correction to "How to check by hand":** the NSE transaction charge for the 2020-03-31 trade is
+  **0.050%, not 0.053%**.
+  - 0.053% applies from 2021-01-01 to 2023-03-31 (NSE/FA/46730).
+  - The printed figure, ₹0.1425 on ₹285.00, was already 0.050%. Only the instruction text was wrong.
+- **IPFT finding:** the different IPFT values in Gate 4 are a real rate change, not a bug.
+  - The 2026-01-05 trade shows 0.000097 because `charge_rates.csv` line 11 applies 0.0005% (₹50 per crore)
+    from 2023-04-01 to 2026-02-28.
+  - The 2026-04-06 and 2026-09-28 trades show 0.000000 because line 12 applies 0.0000001% (₹0.01 per crore)
+    from 2026-03-01. For example, ₹45.50 × 0.0000001% = ₹0.00000005.
+  - Primary source: NSE/FA/73061 (2026-02-27), effective 2026-03-01. For equity options, the transaction
+    charge goes from ₹3,503 to ₹3,552.99 per crore and the IPFT contribution from ₹50 to ₹0.01. The total
+    stays ₹3,553 each side.
+  - A unit test now checks both rows and that transaction charge + IPFT = 0.03553% on both sides of the change.
+- **Gates re-run after Step 6b:** Gates 1–6 all PASS. The output is identical to the run above, apart from
+  the Gate 3 pytest count line (5 passed, 52 deselected).

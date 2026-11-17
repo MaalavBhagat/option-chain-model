@@ -11,6 +11,8 @@ Sources (pre-registration section 4, Amendment 1C, Step 6 decisions):
   * STT on exercise: purchaser only, so short legs never pay it (Amendment 1C).
   * Expiry settlement is not an order: no brokerage, no slippage. An in-the-money settlement
     pays the SEBI fee on notional plus GST on it (decision D9).
+  * Amendment 2 fallbacks where no rate row exists: stamp duty 0.003% before 2020-07-01 (D10,
+    APPROXIMATION) and a NIFTY freeze limit of 1,800 units before 2023-04-03 (D11, SECONDARY).
 All rates in the CSV files are in percent (0.15 means 0.15%).
 """
 
@@ -79,14 +81,47 @@ def exchange_txn_rate(rates, day, exchange="NSE", scenario_first="client_typical
         return rate_on(rates, "exchange_txn_charge", exchange, "statutory", day)
 
 
-def freeze_limit(rates, day):
-    """NIFTY quantity-freeze limit (units per order) on `day`."""
-    return int(rate_on(rates, "quantity_freeze_limit", "NSE", "NIFTY", day))
+def fallback_applies(params, name, day):
+    """The Amendment 2 fallback value for `name` if `day` is before its cut-off, else None."""
+    fallback = params["costs"]["rate_fallbacks"][name]
+    if day < dt.date.fromisoformat(fallback["applies_before"]):
+        return fallback
+    return None
 
 
-def number_of_orders(rates, units, day):
+def freeze_limit(rates, day, params):
+    """NIFTY quantity-freeze limit (units per order) on `day`.
+
+    Before 2023-04-03 no rate row exists; Amendment 2 D11 uses 1,800 units (SECONDARY,
+    the conservative value that gives more orders). Used only for brokerage D.
+    """
+    try:
+        return int(rate_on(rates, "quantity_freeze_limit", "NSE", "NIFTY", day))
+    except MissingRateError:
+        fallback = fallback_applies(params, "nifty_freeze_before_2023_04_03", day)
+        if fallback is None:
+            raise
+        return int(fallback["units"])
+
+
+def stamp_duty_rate(rates, day, params):
+    """Stamp duty in percent of buy-side premium on `day`.
+
+    Before 2020-07-01 duty was set by each state; Amendment 2 D10 uses the national rate
+    from 2020-07-01, 0.003%, as an APPROXIMATION.
+    """
+    try:
+        return rate_on(rates, "stamp_duty", "ALL", "statutory", day)
+    except MissingRateError:
+        fallback = fallback_applies(params, "stamp_duty_before_2020_07_01", day)
+        if fallback is None:
+            raise
+        return float(fallback["rate_pct"])
+
+
+def number_of_orders(rates, units, day, params):
     """Orders needed when one order may not exceed the freeze limit."""
-    return math.ceil(units / freeze_limit(rates, day))
+    return math.ceil(units / freeze_limit(rates, day, params))
 
 
 def brokerage(code, lots, rates, units, day, params):
@@ -101,7 +136,7 @@ def brokerage(code, lots, rates, units, day, params):
     if rule["per"] == "lot_order":
         return float(rule["rupees"]) * lots
     if rule["per"] == "order":
-        return float(rule["rupees"]) * number_of_orders(rates, units, day)
+        return float(rule["rupees"]) * number_of_orders(rates, units, day, params)
     raise ValueError(f"unknown brokerage rule {rule}")
 
 
@@ -125,7 +160,7 @@ def order_charges(side, price, units, lots, day, brokerage_code, rates, params, 
         lines["stamp_duty"] = 0.0
     else:
         lines["stt"] = 0.0
-        lines["stamp_duty"] = premium * rate_on(rates, "stamp_duty", "ALL", "statutory", day) / 100
+        lines["stamp_duty"] = premium * stamp_duty_rate(rates, day, params) / 100
     lines["exchange_txn_charge"] = premium * exchange_txn_rate(rates, day, exchange) / 100
     if exchange == "NSE":
         lines["ipft"] = premium * rate_on(rates, "ipft", "NSE", "statutory", day) / 100
