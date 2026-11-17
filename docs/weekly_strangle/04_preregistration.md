@@ -357,3 +357,71 @@ muhurat_excluded: [2019-10-27, 2020-11-14, 2021-11-04, 2022-10-24, 2023-11-12, 2
   broker bulletin) says the cut from 0.050% to 0.0495% took effect only on 2024-04-01.
 - **Choice:** keep the existing `charge_rates.csv` row. The secondary source is noted here.
   - The impact is 0.0005% of premium on trades entered 2024-01-01 to 2024-03-31.
+
+### Amendment 3 — 2026-11-17, adopted before any outcome was computed
+
+- **What it fixes:** the secondary-metric methods left open in §7 (set by Goggy), plus 12 method choices for
+  §6/§7 that Claude Code recommended and Goggy accepted ("Take all, then run").
+- **Parameters:** `config/weekly_strangle/prereg_params_amendment_3.json` replaces
+  `prereg_params_amendment_2.json` for all runs. The earlier JSON files are kept unchanged.
+- **Not computed:** no P&L, payoff, outcome or backtest result had been computed when this was adopted.
+
+**3A. Secondary-metric methods [Goggy]**
+- **Margin per trade** (an approximation; no NSE SPAN files):
+  - **Short legs without wings** (one- or two-sided): m × entry spot × units of ONE side, the side with more
+    units. m = 0.10 primary; sensitivity 0.07 and 0.13.
+  - **V4 iron condor:**
+    - margin = max over sides of (wing width × units) − total net credit received, floored at 0;
+    - a side with no wing uses the naked rule for that side.
+- **Return on margin:** per week = net P&L / margin. Annualised = mean weekly × 52.
+- **Sharpe and Sortino:**
+  - Sharpe = mean / std of weekly return on margin × √52.
+  - Sortino uses the downside deviation instead of the std.
+  - Risk-free rate = 0. Skipped weeks count as 0 return.
+- **Benchmark:** NIFTY price index buy-and-hold.
+  - Weekly returns run from expiry close to expiry close over the same expiries.
+  - Dividends are excluded, which understates the benchmark.
+
+**3B. Method choices for §6 and §7 [Claude Code recommended; Goggy accepted]**
+1. **H2 and H4 settings:** T-1, s = 1, primary values, points per unit.
+   - H2 is scored separately under brokerage A, B and C. "A smaller worst week than V1" must hold in both IS
+     and OOS.
+   - H4 uses brokerage C (the H1 setting).
+2. **H3a and H3b settings:**
+   - **H3a:** brokerage C, T-1, s = 1, points per unit. HELD if |V6 worst IS week − V1 worst IS week| ≤ 0.20 ×
+     |V1 worst IS week|.
+   - **H3b:** all six variants at primary values, T-1, s = 1, brokerage A. HELD only if no variant has a
+     positive total in IS and none has one in OOS.
+3. **H1 bootstrap:**
+   - Moving-block bootstrap: overlapping blocks of 4 consecutive weeks with uniformly drawn starts, joined and
+     cut to n weeks. 10,000 resamples, numpy `default_rng(20261117)`.
+   - The statistic is the mean weekly net points per unit. The bound is the 2.5th percentile of the resampled
+     means.
+   - Run separately for IS and OOS. "Demonstrated edge" also requires the same test to pass at s = 2.
+4. **Skipped weeks** (V5 or V6 skips, or every leg skipped):
+   - They count as 0 in totals, means, CVaR, drawdown, worst runs and the bootstrap.
+   - Win rate, average win and average loss are computed over traded weeks only. A win is net > 0; a loss is
+     net < 0.
+5. **CVaR c:** the mean of the worst ⌈(1 − c) × n⌉ weekly results, reported as P&L (a negative number).
+   - "Lower CVaR" (H4) means a smaller tail loss, i.e. a less negative number.
+6. **Sharpe and Sortino formulas:**
+   - Sharpe uses the sample standard deviation (n − 1 divisor).
+   - Sortino's downside deviation = √(mean of min(r, 0)²) over all weeks.
+7. **Drawdown:** measured on cumulative rupees at 10 lots per leg, separately for IS and OOS.
+   - % of margin = max drawdown ÷ the median weekly margin (m = 0.10) over traded weeks.
+   - Weeks to recover = expiries from the trough to the next new high, or "not recovered".
+8. **Worst runs and breaches:**
+   - Worst 3-week run = the worst sum of 3 consecutive expiries, with skipped weeks counting as 0.
+   - Strike breach = a short leg whose strike is beyond the expiry spot, counted even if V3 stopped it out
+     earlier.
+9. **Brokerage D:**
+   - Its points per unit are reported at 1, 10 and 100 lots, and its other metrics at 10 lots.
+   - Return on margin uses rupees at 10 lots for every brokerage.
+10. **Stress-period membership:** a week belongs to a stress period if its expiry date falls in the listed
+    months.
+11. **EXPLORATORY real-account comparison sizing:**
+    - Each V1 leg (T-1, brokerage A, s = 1) is sized at the real account's total units on that side for that
+      expiry. A side the account did not trade gets 0 units.
+12. **EXPLORATORY comparison figure:** the statement's per-leg gross from its P&L column, summed by expiry,
+    for the same expiries.
+    - Only symbol and amount rows are read; nothing from the header area.

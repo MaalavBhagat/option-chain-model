@@ -1,0 +1,358 @@
+{
+  "is_expiries": [
+    "2019-02-14",
+    "2023-12-28"
+  ],
+  "oos_expiries": [
+    "2024-01-04",
+    "2026-11-09"
+  ],
+  "entry_day": {
+    "primary": 1,
+    "sensitivity": [
+      2,
+      4
+    ]
+  },
+  "strike_pct_otm": {
+    "call": 0.07,
+    "put": 0.1,
+    "max_closer_pp": 0.02
+  },
+  "eligible": {
+    "min_volume_contracts": 1,
+    "min_close": 0.05
+  },
+  "slippage_ticks": {
+    "primary": 1,
+    "sensitivity": [
+      2,
+      4
+    ]
+  },
+  "tick": 0.05,
+  "brokerage": {
+    "A": {
+      "per": "lot_order",
+      "rupees": 30
+    },
+    "B": {
+      "per": "lot_order",
+      "rupees": 20
+    },
+    "C": {
+      "per": "none",
+      "rupees": 0
+    },
+    "D": {
+      "per": "order",
+      "rupees": 20,
+      "role": "reference"
+    }
+  },
+  "lots": [
+    1,
+    10,
+    100
+  ],
+  "max_weekly_loss_rupees": 5000,
+  "variants": {
+    "V1": {},
+    "V2": {
+      "abs_delta": 0.04,
+      "accept": [
+        0.02,
+        0.06
+      ],
+      "sensitivity": [
+        0.03,
+        0.05
+      ],
+      "r": 0.0,
+      "tie": "further_otm"
+    },
+    "V3": {
+      "stop_multiple": 3,
+      "sensitivity": [
+        2,
+        5
+      ]
+    },
+    "V4": {
+      "wing_points": 300,
+      "tolerance_points": 100,
+      "sensitivity": [
+        200,
+        500
+      ],
+      "wing_choice": {
+        "choose": "nearest_to_W_points",
+        "tie": "further_out",
+        "eligible": {
+          "min_volume_contracts": 1,
+          "min_close": 0.05
+        }
+      }
+    },
+    "V5": {
+      "vix_skip_above": 18,
+      "sensitivity": [
+        15,
+        20
+      ]
+    },
+    "V6": {
+      "fomc_shift_next_indian_day": true,
+      "fomc_shift_applies_to": [
+        "config/weekly_strangle/event_calendar_2019_2023.csv",
+        "config/weekly_strangle/event_calendar_2026_extension.csv"
+      ],
+      "fomc_already_india_date": [
+        "config/event_calendar.csv"
+      ],
+      "event_files": [
+        "config/event_calendar.csv",
+        "config/weekly_strangle/event_calendar_2019_2023.csv",
+        "config/weekly_strangle/event_calendar_2026_extension.csv"
+      ],
+      "event_types": [
+        "US Fed FOMC",
+        "RBI MPC",
+        "Union Budget",
+        "Lok Sabha Election Result"
+      ],
+      "ignored_event_types": [
+        "State Election Result"
+      ],
+      "include_secondary": true
+    }
+  },
+  "bootstrap": {
+    "block_weeks": 4,
+    "resamples": 10000,
+    "seed": 20261117,
+    "ci": 0.95
+  },
+  "muhurat_excluded": [
+    "2019-10-27",
+    "2020-11-14",
+    "2021-11-04",
+    "2022-10-24",
+    "2023-11-12",
+    "2024-11-01",
+    "2025-10-21",
+    "2026-11-08"
+  ],
+  "amendment": {
+    "id": 3,
+    "date": "2026-11-17",
+    "supersedes": "config/weekly_strangle/prereg_params_amendment_2.json",
+    "text": "docs/weekly_strangle/04_preregistration.md (### Amendment 3)",
+    "previous": {
+      "id": 2,
+      "date": "2026-11-17",
+      "supersedes": "config/weekly_strangle/prereg_params_amendment_1.json",
+      "text": "docs/weekly_strangle/04_preregistration.md (### Amendment 2)",
+      "previous": {
+        "id": 1,
+        "date": "2026-11-17",
+        "supersedes": "config/weekly_strangle/prereg_params.json",
+        "text": "docs/weekly_strangle/04_preregistration.md#amendment-1",
+        "rationale": "docs/weekly_strangle/04a_amendment_1.md"
+      }
+    }
+  },
+  "stt_on_exercise": {
+    "payer": "purchaser_only",
+    "short_legs": 0,
+    "long_wings_itm": "intrinsic_value_x_units_at_rate_on_expiry_date",
+    "source": "config/weekly_strangle/charge_rates.csv:stt_option_exercised"
+  },
+  "gate1": {
+    "rule": "D1",
+    "check": "costs.py reproduces Step 2 'predicted from rates' column within Rs 1",
+    "items": [
+      "STT",
+      "TOC NSE (txn + IPFT)",
+      "TOC BSE"
+    ],
+    "not_scored": [
+      "clearing",
+      "GST"
+    ]
+  },
+  "rate_files": [
+    "config/weekly_strangle/charge_rates.csv",
+    "config/weekly_strangle/charge_rates_pre2024.csv"
+  ],
+  "costs": {
+    "nse_txn_scenario": "client_typical",
+    "nse_txn_fallback_scenario": "statutory",
+    "include_ipft": true,
+    "include_clearing": false,
+    "gst_base": [
+      "brokerage",
+      "exchange_txn_charge",
+      "sebi_turnover_fee"
+    ],
+    "itm_settlement": {
+      "sebi_fee_on_notional": true,
+      "notional": "settlement_spot_x_units",
+      "notional_status": "CONSERVATIVE_ASSUMPTION",
+      "gst_on_sebi_fee": true,
+      "stt_exercise": "long legs only (Amendment 1C)",
+      "exchange_txn_charge": false
+    },
+    "rate_fallbacks": {
+      "stamp_duty_before_2020_07_01": {
+        "rate_pct": 0.003,
+        "applies_before": "2020-07-01",
+        "status": "APPROXIMATION",
+        "decision": "D10"
+      },
+      "nifty_freeze_before_2023_04_03": {
+        "units": 1800,
+        "applies_before": "2023-04-03",
+        "applies_to": "brokerage D only",
+        "status": "SECONDARY",
+        "decision": "D11"
+      }
+    },
+    "nse_txn_jan_mar_2024": {
+      "rule": "existing charge_rates.csv row (0.0495% from 2024-01-01)",
+      "decision": "D12",
+      "note": "secondary broker bulletin says the 0.050% -> 0.0495% cut started 2024-04-01; impact 0.0005% of premium"
+    }
+  },
+  "missing_spot": "skip_and_log",
+  "decisions_file": "config/weekly_strangle/step6_decisions.json",
+  "secondary_metrics": {
+    "margin": {
+      "naked": "m x entry_spot x units of the side with more units",
+      "m": {
+        "primary": 0.1,
+        "sensitivity": [
+          0.07,
+          0.13
+        ]
+      },
+      "iron_condor": "max(0, max over sides of (wing_width x units) - total net credit received); a side with no wing uses the naked rule"
+    },
+    "return_on_margin": {
+      "weekly": "net_pnl / margin",
+      "annualised": "mean_weekly x 52",
+      "skipped_week_return": 0.0,
+      "rupees_basis_lots": 10
+    },
+    "sharpe": {
+      "formula": "mean / std(ddof=1) x sqrt(52)",
+      "risk_free": 0.0
+    },
+    "sortino": {
+      "formula": "mean / sqrt(mean(min(r,0)^2)) x sqrt(52)",
+      "risk_free": 0.0
+    },
+    "benchmark": {
+      "series": "NIFTY price index",
+      "weekly_return": "expiry close to expiry close, same expiries",
+      "dividends": "excluded (understatement)"
+    }
+  },
+  "hypothesis_tests": {
+    "common": {
+      "entry_day": 1,
+      "slippage_ticks": 1,
+      "values": "primary",
+      "unit": "points_per_unit"
+    },
+    "H1": {
+      "variant": "V1",
+      "brokerage": "C",
+      "bootstrap": {
+        "type": "moving_block",
+        "block_weeks": 4,
+        "resamples": 10000,
+        "seed": 20261117,
+        "bound": "2.5th percentile of resampled means",
+        "length": "n weeks (blocks joined and cut)"
+      },
+      "periods": [
+        "IS",
+        "OOS"
+      ],
+      "demonstrated_edge_also_at_slippage": 2
+    },
+    "H2": {
+      "brokerages": [
+        "A",
+        "B",
+        "C"
+      ],
+      "worst_week_smaller_in": [
+        "IS",
+        "OOS"
+      ]
+    },
+    "H3a": {
+      "brokerage": "C",
+      "rule": "|V6 worst IS - V1 worst IS| <= 0.20 x |V1 worst IS|"
+    },
+    "H3b": {
+      "brokerage": "A",
+      "variants": "all six at primary values",
+      "rule": "no positive total in IS and none in OOS"
+    },
+    "H4": {
+      "brokerage": "C",
+      "rule": "CVaR99(V4) > CVaR99(V1) as P&L in IS and OOS, and total(V4) < total(V1) in OOS"
+    }
+  },
+  "metric_definitions": {
+    "skipped_weeks": "0 in totals, means, CVaR, drawdown, worst runs, bootstrap; excluded from win rate / avg win / avg loss",
+    "win": "net > 0",
+    "loss": "net < 0",
+    "cvar": "mean of worst ceil((1-c) x n) weekly results, as P&L (negative)",
+    "drawdown": {
+      "basis": "cumulative rupees at 10 lots per leg, per period",
+      "pct_of_margin": "max drawdown / median weekly margin (m=0.10) over traded weeks",
+      "weeks_to_recover": "expiries from trough to next new high, else not recovered"
+    },
+    "worst_3_week_run": "worst sum of 3 consecutive expiries (skipped = 0)",
+    "strike_breach": "short leg with strike beyond expiry spot, even if V3 stopped it earlier",
+    "brokerage_D": "points per unit at 1/10/100 lots; other metrics at 10 lots",
+    "stress_membership": "expiry date inside the listed months"
+  },
+  "exploratory": {
+    "real_account": {
+      "label": "EXPLORATORY",
+      "variant": "V1",
+      "entry_day": 1,
+      "brokerage": "A",
+      "slippage_ticks": 1,
+      "sizing": "real account's total units per side per expiry; untraded side = 0 units",
+      "comparison": "statement per-leg gross (P&L column) summed by expiry, symbol/amount rows only"
+    }
+  },
+  "stress_periods": [
+    [
+      "2020-03-01",
+      "2020-05-31"
+    ],
+    [
+      "2022-02-01",
+      "2022-03-31"
+    ],
+    [
+      "2024-06-01",
+      "2024-06-30"
+    ],
+    [
+      "2025-04-01",
+      "2025-04-30"
+    ],
+    [
+      "2026-10-01",
+      "2026-11-30"
+    ]
+  ]
+}
