@@ -115,6 +115,18 @@ without the data itself.
   single worst trading day in the sample period happened to not be an
   expiry day, which flatters every headline number in this project.
 
+## Weekly strangle study
+
+- A pre-registered backtest of selling deep out-of-the-money NIFTY weekly options (call about 7% above, put about 10% below spot, entered the day before expiry, held to expiry), 405 weekly expiries from 2019-02-14 to 2026-11-09.
+- Six variants (baseline, delta strikes, stop-loss, iron condor, VIX filter, event filter), with every statutory charge at its dated rate, slippage of 1/2/4 ticks and brokerage of ₹30 per lot, ₹20 per lot or ₹0.
+- In-sample 2019–2023, out-of-sample 2024–2026; every rule was committed to git before any result was computed.
+
+**Verdict:** the baseline has a small edge only at near-zero brokerage (2.4% a year on margin in 2024–26, below NIFTY's 5.8%); at ₹30 per lot it loses money in 2024–26, and one crash on an expiry day would erase more than a decade of profit.
+
+- Final report: [docs/weekly_strangle/08_final_report.md](docs/weekly_strangle/08_final_report.md)
+- Pre-registration: [docs/weekly_strangle/04_preregistration.md](docs/weekly_strangle/04_preregistration.md)
+- Charts: [outputs/weekly_strangle/charts/](outputs/weekly_strangle/charts/)
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

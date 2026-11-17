@@ -116,3 +116,10 @@
 ## E. EXPLORATORY — NSE index circuit breakers
 
 - NSE/CMTR/24709 (2013-10-11), https://archives.nseindia.com/content/circulars/CMTR24709.pdf: index-based market-wide circuit filters at 10%, 15% and 20%, "based on the closing index value of NIFTY on the previous trading day". They halt trading for a set time (10%: 45 min before 1 PM, 15 min from 1 PM to 2:30 PM, no halt at or after 2:30 PM; 15%: 1 h 45 min before 1 PM, 45 min from 1 PM to 2 PM, market closed on or after 2 PM; 20%: market closed for the day). Trading resumes after a halt, and the expiry-day settlement uses the index closing value, so a halt does not cap the settlement move (only a 20% trigger closes the market for the day).
+
+## Erratum (2026-11-17)
+
+- Section E, last sentence: "(only a 20% trigger closes the market for the day)" is wrong.
+- Per NSE/CMTR/24709, a 15% trigger on or after 2 PM also closes the market for the day; this is already stated earlier in the same paragraph.
+- Corrected: a 15% trigger at or after 2 PM, or any 20% trigger, closes the market for the day.
+- No number in sections A–D changes.
