@@ -49,6 +49,7 @@ still open; count from the statement's P&L column). Does the strategy actually w
 - **Engine vs reality:** run on the real account's 30 expiries and sizes, the baseline gives
   ₹21.2k gross / ₹2.3k net at ₹30 per lot, against the account's real ₹23.5k (NIFTY legs only)
   / ₹1.7k.
+- Gate 4 printout checked by hand in chat on 2026-11-17: all six trades match; the one doc typo (0.053% → 0.050%) was fixed in the 05 erratum.
 
 ## 4. Results — baseline (V1), 10 lots, 1 tick slippage
 
