@@ -33,7 +33,7 @@ CACHE_FILE = PROCESSED / "ws_options_cache.parquet"
 SPOT_CACHE_FILE = PROCESSED / "ws_spot_cache.parquet"
 VIX_FILE = RAW / "india_vix_daily.csv"
 CONFIG = REPO / "config" / "weekly_strangle"
-PARAMS_FILE = CONFIG / "prereg_params_amendment_2.json"
+PARAMS_FILE = CONFIG / "prereg_params_amendment_3.json"
 DECISIONS_FILE = CONFIG / "step6_decisions.json"
 LOT_PRE2024_FILE = CONFIG / "lot_size_pre2024.csv"
 
@@ -50,7 +50,7 @@ class LookAheadError(Exception):
 
 
 def load_params():
-    """Return the pre-registered parameters (Amendment 2 version) as a dict."""
+    """Return the pre-registered parameters (Amendment 3 version) as a dict."""
     with open(PARAMS_FILE) as f:
         return json.load(f)
 

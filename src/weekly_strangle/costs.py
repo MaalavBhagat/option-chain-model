@@ -50,11 +50,29 @@ def load_rates():
     return table
 
 
+_RATE_CACHE = {}
+
+
 def rate_on(rates, charge, exchange, scenario, day):
     """The rate (in percent, or units for freeze limits) in force on `day`.
 
     Raises MissingRateError if no row covers the date or the row has no rate.
+    Results are remembered per rate table, so repeated look-ups are fast.
     """
+    key = (id(rates), charge, exchange, scenario, day)
+    if key not in _RATE_CACHE:
+        try:
+            _RATE_CACHE[key] = _rate_on_uncached(rates, charge, exchange, scenario, day)
+        except MissingRateError as err:
+            _RATE_CACHE[key] = err
+    value = _RATE_CACHE[key]
+    if isinstance(value, MissingRateError):
+        raise value
+    return value
+
+
+def _rate_on_uncached(rates, charge, exchange, scenario, day):
+    """The look-up behind rate_on(), without the cache."""
     rows = rates[(rates["charge"] == charge) & (rates["exchange"] == exchange) & (rates["scenario"] == scenario)]
     covering = []
     for _, row in rows.iterrows():

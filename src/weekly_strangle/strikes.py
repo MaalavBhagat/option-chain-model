@@ -9,6 +9,7 @@ Definitions used throughout:
   Eligible strike  = traded on the entry day (volume >= 1) with close >= 0.05.
 """
 
+import functools
 import math
 
 from .data import rows_as_of
@@ -80,10 +81,12 @@ def black_scholes_delta(spot, strike, years, vol, option_type):
     return normal_cdf(d1) - 1
 
 
+@functools.lru_cache(maxsize=None)
 def implied_vol(price, spot, strike, years, option_type, low=1e-4, high=5.0, tolerance=1e-8):
     """Volatility that makes the Black-Scholes price equal `price` (bisection).
 
     Returns None when no volatility between `low` and `high` fits (the strike is then dropped).
+    Results are remembered (the same inputs always give the same answer).
     """
     if years <= 0:
         return None
@@ -111,7 +114,7 @@ def select_delta(chain, spot, option_type, years, target, accept_low, accept_hig
         return None, "no eligible strike on the entry day"
     records = []
     for _, row in chain.iterrows():
-        vol = implied_vol(row["close"], spot, row["strike"], years, option_type)
+        vol = implied_vol(float(row["close"]), float(spot), float(row["strike"]), float(years), option_type)
         if vol is None:
             continue
         delta = abs(black_scholes_delta(spot, row["strike"], years, vol, option_type))

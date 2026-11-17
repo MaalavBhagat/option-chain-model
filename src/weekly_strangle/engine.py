@@ -47,19 +47,37 @@ class Context:
     vix: pd.Series
     events: pd.DataFrame
     lot_table: pd.DataFrame
+    by_day: dict = None        # optional speed-up: {trade_date: rows of that day}
+    by_contract: dict = None   # optional speed-up: {(label, strike, type): rows of that contract}
 
 
-def load_context(rebuild_cache=False):
-    """Load data, calendars, rates, parameters and events."""
+def load_context(rebuild_cache=False, build_indexes=False):
+    """Load data, calendars, rates, parameters and events.
+
+    build_indexes=True also groups the option rows by day and by contract, which makes
+    many repeated trades much faster without changing any result.
+    """
     from .data import LOT_PRE2024_FILE
     params = load_params()
     table, spot, file_days = load_cache(rebuild=rebuild_cache)
     days = cal.trading_days(file_days, params)
     label_map = cal.expiry_map(table["expiry_label"].unique(), days)
     events, _ = load_v6_events(params, days)
-    return Context(table=table, spot=spot, file_days=file_days, days=days, label_map=label_map,
-                   rates=load_rates(), params=params, decisions=load_decisions(), vix=load_vix(),
-                   events=events, lot_table=pd.read_csv(LOT_PRE2024_FILE))
+    ctx = Context(table=table, spot=spot, file_days=file_days, days=days, label_map=label_map,
+                  rates=load_rates(), params=params, decisions=load_decisions(), vix=load_vix(),
+                  events=events, lot_table=pd.read_csv(LOT_PRE2024_FILE))
+    if build_indexes:
+        ctx.by_day = dict(tuple(table.groupby("trade_date")))
+        ctx.by_contract = {key: rows.sort_values("trade_date")
+                           for key, rows in table.groupby(["expiry_label", "strike", "type"])}
+    return ctx
+
+
+def rows_on_day(ctx, day):
+    """All option rows dated `day` (from the index if built)."""
+    if ctx.by_day is not None:
+        return ctx.by_day.get(day, ctx.table.iloc[0:0])
+    return ctx.table[ctx.table["trade_date"] == day]
 
 
 def week_skip_reason(ctx, expiry, entry, variant, variant_value):
@@ -107,7 +125,7 @@ def select_legs(ctx, expiry, variant, k, ticks, variant_value=None):
     result["week_skipped"] = week_skip_reason(ctx, expiry, entry, variant, variant_value)
     if result["week_skipped"]:
         return result
-    entry_rows = ctx.table[ctx.table["trade_date"] == entry]
+    entry_rows = rows_on_day(ctx, entry)
     spot = float(ctx.spot[entry])
     result["entry_spot"] = spot
     targets = {"CE": params["strike_pct_otm"]["call"], "PE": params["strike_pct_otm"]["put"]}
@@ -169,6 +187,8 @@ def select_legs(ctx, expiry, variant, k, ticks, variant_value=None):
 
 def contract_rows(ctx, leg):
     """All cached rows of one contract (same label, strike and type), in date order."""
+    if ctx.by_contract is not None:
+        return ctx.by_contract.get((leg["label"], leg["strike"], leg["type"]), ctx.table.iloc[0:0])
     t = ctx.table
     rows = t[(t["expiry_label"] == leg["label"]) & (t["strike"] == leg["strike"]) & (t["type"] == leg["type"])]
     return rows.sort_values("trade_date")
@@ -214,6 +234,15 @@ def leg_outcome(ctx, trade, leg, brokerage_code, lots_list):
 def build_trade(ctx, expiry, variant, k, brokerage_code, ticks, lots_list=LOTS, variant_value=None):
     """One full trade: legs, exits, charges and net result at each lot size."""
     trade = select_legs(ctx, expiry, variant, k, ticks, variant_value)
+    return finish_trade(ctx, trade, brokerage_code, lots_list)
+
+
+def finish_trade(ctx, trade, brokerage_code, lots_list=LOTS):
+    """Steps 4-5 for a trade from select_legs(): exits, charges and net result.
+
+    The selection does not depend on brokerage, so one selection can be finished under
+    each brokerage (pass a deep copy each time).
+    """
     trade["brokerage"] = brokerage_code
     trade["status"] = "skipped" if trade["week_skipped"] else "ok"
     traded = [leg for leg in trade["legs"] if leg["skipped"] is None]
