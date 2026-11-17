@@ -69,6 +69,20 @@ def test_worthless_settlement_costs_nothing(rates):
     assert costs.settlement_charges("short", 0.0, 22000, 650, D(2026, 6, 2), rates)["total"] == 0
 
 
-def test_in_the_money_settlement_is_undecided(rates):
-    with pytest.raises(costs.UndecidedRuleError):
-        costs.settlement_charges("short", 5.0, 22000, 650, D(2026, 6, 2), rates)
+def test_in_the_money_short_pays_sebi_fee_on_notional_not_stt(rates):
+    lines = costs.settlement_charges("short", 5.0, 22000, 650, D(2026, 6, 2), rates)
+    assert lines["stt_exercise"] == 0
+    assert lines["sebi_turnover_fee"] == pytest.approx(22000 * 650 * 0.000001)
+    assert lines["gst"] == pytest.approx(0.18 * lines["sebi_turnover_fee"])
+    assert lines["total"] == pytest.approx(lines["sebi_turnover_fee"] + lines["gst"])
+
+
+def test_in_the_money_long_pays_stt_on_intrinsic_and_sebi_fee(rates):
+    lines = costs.settlement_charges("long", 5.0, 22000, 650, D(2026, 6, 2), rates)
+    assert lines["stt_exercise"] == pytest.approx(5.0 * 650 * 0.0015)
+    assert lines["total"] == pytest.approx(lines["stt_exercise"] + lines["sebi_turnover_fee"] + lines["gst"])
+
+
+def test_long_exercise_before_sept_2019_uses_settlement_value(rates):
+    lines = costs.settlement_charges("long", 5.0, 11000, 75, D(2019, 8, 1), rates)
+    assert lines["stt_exercise"] == pytest.approx(11000 * 75 * 0.00125)

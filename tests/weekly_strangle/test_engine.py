@@ -52,10 +52,14 @@ def test_leg_skipped_when_fill_below_minimum():
     assert call["skipped"] == "sale price < 0.05 after slippage"
 
 
-def test_in_the_money_week_reports_undecided_rule():
+def test_in_the_money_week_charges_sebi_fee_at_settlement():
     ctx = synthetic_context(expiry_spot=24000.0)
     trade = engine.build_trade(ctx, EXPIRY, "V1", 1, "C", 1, lots_list=(1,))
-    assert trade["status"].startswith("UndecidedRuleError")
+    assert trade["status"] == "ok"
+    call, put = trade["legs"]
+    assert call["intrinsic"] == 500 and put["intrinsic"] == 0
+    assert call["charges"][1]["exit"]["sebi_turnover_fee"] == pytest.approx(24000 * 65 * 0.000001)
+    assert put["charges"][1]["exit"]["total"] == 0
 
 
 def test_missing_spot_skips_week():

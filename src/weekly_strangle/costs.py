@@ -9,7 +9,8 @@ Sources (pre-registration section 4, Amendment 1C, Step 6 decisions):
   * GST = 18% of (brokerage + exchange transaction charge + SEBI fee) - section 4 and D4.
   * STT on option sale: seller pays, on premium. Stamp duty: buyer pays, on premium.
   * STT on exercise: purchaser only, so short legs never pay it (Amendment 1C).
-  * Expiry settlement is not an order: no brokerage, no slippage.
+  * Expiry settlement is not an order: no brokerage, no slippage. An in-the-money settlement
+    pays the SEBI fee on notional plus GST on it (decision D9).
 All rates in the CSV files are in percent (0.15 means 0.15%).
 """
 
@@ -142,16 +143,15 @@ def order_charges(side, price, units, lots, day, brokerage_code, rates, params, 
 def settlement_charges(position, intrinsic, settle_spot, units, day, rates):
     """Charges, in rupees, at cash settlement on expiry day.
 
-    Expiry settlement is not an order: no brokerage and no slippage.
+    Expiry settlement is not an order: no brokerage, no slippage, no exchange transaction charge.
     A leg that expires worthless (intrinsic 0) pays nothing.
-    A long leg that settles in the money pays STT on exercise (Amendment 1C):
-      from 2019-09-01 on intrinsic value x units; before that on the settlement value.
-    Short legs never pay STT on exercise.
-    The pre-registration does not say whether the SEBI fee (whose 'turnover' includes the
-    notional of exercised/assigned options) or exchange charges apply to an in-the-money
-    settlement, so any leg settling in the money raises UndecidedRuleError.
+    A leg that settles in the money (decision D9):
+      * pays the SEBI fee on its notional value = settlement spot x units, whether it is a
+        short (assigned) or a long (exercised) leg, plus 18% GST on that fee;
+      * if it is long, also pays STT on exercise (Amendment 1C): from 2019-09-01 on
+        intrinsic value x units, before that on the settlement value. Short legs never pay it.
     """
-    lines = {"stt_exercise": 0.0, "total": 0.0}
+    lines = {"stt_exercise": 0.0, "notional": 0.0, "sebi_turnover_fee": 0.0, "gst": 0.0, "total": 0.0}
     if intrinsic <= 0:
         return lines
     if position == "long":
@@ -160,7 +160,8 @@ def settlement_charges(position, intrinsic, settle_spot, units, day, rates):
             lines["stt_exercise"] = intrinsic * units * stt_rate
         else:
             lines["stt_exercise"] = settle_spot * units * stt_rate
-    raise UndecidedRuleError(
-        "leg settles in the money: the pre-registration does not say whether the SEBI fee on "
-        "exercised/assigned notional (or any exchange charge) applies at settlement "
-        f"(STT on exercise computed so far: Rs {lines['stt_exercise']:.2f})")
+    lines["notional"] = settle_spot * units
+    lines["sebi_turnover_fee"] = lines["notional"] * rate_on(rates, "sebi_turnover_fee", "ALL", "statutory", day) / 100
+    lines["gst"] = lines["sebi_turnover_fee"] * rate_on(rates, "gst", "ALL", "statutory", day) / 100
+    lines["total"] = lines["stt_exercise"] + lines["sebi_turnover_fee"] + lines["gst"]
+    return lines

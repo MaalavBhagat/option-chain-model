@@ -11,5 +11,11 @@
   "D5_missing_spot": "skip_and_log",
   "D6_v4_wing": {"choose": "nearest_to_W_points", "tie": "further_out", "eligible": {"min_volume_contracts": 1, "min_close": 0.05}},
   "D7_v2_tie": "further_otm",
-  "D8_freeze_pre_2023_04_03": "part of D2 (pre-2024 rates file)"
+  "D8_freeze_pre_2023_04_03": "part of D2 (pre-2024 rates file)",
+  "D9_itm_settlement": {
+    "adopted": "2026-11-17",
+    "adopted_by": "Goggy: 'Add SEBI fee too'",
+    "rule": "A leg that settles in the money pays the SEBI turnover fee on its notional value (both short/assigned and long/exercised legs), plus 18% GST on that fee. A long leg also pays STT on exercise (Amendment 1C). No brokerage, no slippage and no exchange transaction charge at settlement.",
+    "notional": "settlement spot x units (interpretation of the Gazette's 'notional value of option contracts exercised or assigned')"
+  }
 }

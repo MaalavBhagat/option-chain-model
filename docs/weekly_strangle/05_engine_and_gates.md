@@ -223,13 +223,19 @@ These six trades are not a sample result and say nothing about the strategy's ou
 
 ## Decisions I STOPPED on (not decided; the engine raises an error instead)
 
-1. **Charges when a leg settles in the money.**
+1. **Charges when a leg settles in the money: DECIDED after the run, as D9 (Goggy, 2026-11-17, "Add SEBI
+   fee too").**
    - Section 4 doesn't say whether the SEBI fee or an exchange charge applies at an in-the-money
      settlement. The SEBI Gazette defines option "turnover" to include "notional value of option contracts
      exercised or assigned".
-   - `costs.settlement_charges` raises `UndecidedRuleError` for any leg with intrinsic > 0, so **no
-     backtest can run until this is decided**.
-   - None of the six Gate 4 trades hit it.
+   - At the time of the gate run, `costs.settlement_charges` raised `UndecidedRuleError` for any leg with
+     intrinsic > 0. None of the six Gate 4 trades hit it.
+   - **D9 now applies.** An in-the-money leg pays the SEBI fee on notional plus 18% GST on that fee,
+     whether it is short or long. A long leg also pays STT on exercise (Amendment 1C). There is no exchange
+     transaction charge.
+   - Notional is read as settlement spot × units. That is an interpretation of the Gazette wording.
+   - Re-run after D9: unit tests 48 passed (one test replaced by three), with 5 look-ahead tests; Gates 1–6
+     PASS, with output identical to the run above apart from the pytest count line.
 2. **Stamp duty before 2020-07-01.** It was state-wise, so there is no single rate.
    - It blocks V3 buy-backs and V4 wing buys in 2019 to mid-2020 (`MissingRateError`).
 3. **NIFTY freeze limit before 2023-04-03.** No primary source was read; a forum post says 2,800 → 1,800 from

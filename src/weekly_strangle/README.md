@@ -48,9 +48,9 @@ This package holds the code for the weekly NIFTY short-strangle study. Its rules
   - **Slippage:** a sell fills `s` ticks below the close, a buy `s` ticks above.
   - **Freeze limit:** orders are split at the freeze limit, which matters only for brokerage D.
   - **Expiry:** settlement is not an order. A worthless leg costs nothing.
-  - **In-the-money settlement:** a leg that settles in the money stops with
-    `UndecidedRuleError`. The pre-registration doesn't say whether the SEBI fee or exchange
-    charges apply then.
+  - **In-the-money settlement (decision D9):** a leg that settles in the money pays the SEBI fee
+    on its notional (settlement spot × units) plus GST on that fee. A long wing also pays STT on
+    exercise. There is no exchange transaction charge at settlement.
 - **`settlement.py`**: computes each leg's intrinsic value at the expiry-day spot close. A short
   leg pays it and a long wing receives it.
 - **`variants.py`**: holds the remaining variant rules:
