@@ -45,7 +45,7 @@ still open; count from the statement's P&L column). Does the strategy actually w
   No parameter was tuned on results.
 - **Checks before results:** cost model reproduces the real statement's charges; settlement
   reproduces all 54 real held legs; no look-ahead (unit-tested); six trades re-computed field by
-  field by script (the by-hand check of the printout is still open).
+  field by script (by-hand check of the printout: done, see the last bullet of this section).
 - **Engine vs reality:** run on the real account's 30 expiries and sizes, the baseline gives
   ₹21.2k gross / ₹2.3k net at ₹30 per lot, against the account's real ₹23.5k (NIFTY legs only)
   / ₹1.7k.
